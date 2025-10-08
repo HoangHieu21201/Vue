@@ -31,7 +31,8 @@ const handleLogout = () => {
       <div class="container">
         <!-- Logo -->
         <router-link class="navbar-brand d-flex align-items-center" to="/">
-          Home
+          <img src="https://figurecollector.io.vn/wp-content/uploads/2025/09/logofigure.png" alt="logo" width="220"
+            class="me-2" />
         </router-link>
 
         <!-- Toggle (mobile) -->
@@ -101,12 +102,12 @@ const handleLogout = () => {
         <!-- Logo + Description -->
         <div class="col-lg-4 col-md-6">
           <router-link class="navbar-brand d-flex align-items-center" to="/">
-            <img src="https://www.accuratereviews.com/wp-content/uploads/2021/07/outfit-logo-padding.png" alt="logo"
-              width="110" class="me-2" />
+            <img src="https://figurecollector.io.vn/wp-content/uploads/2025/09/logofigure.png" alt="logo" width="220"
+              class="me-2" />
           </router-link>
           <p class="small text-secondary mb-3">
-            Where fashion meets technology ✨ — Stay updated with the latest
-            trends and elevate your style with OutfitVN.
+            Figure gundam đẳng cấp — Cập nhật những xu hướng mới nhất
+            và nâng tầm phong cách cùng Figurecollector.io.vn
           </p>
           <div class="d-flex gap-3">
             <a href="#" class="social"><i class="fab fa-facebook-f"></i></a>
@@ -141,9 +142,9 @@ const handleLogout = () => {
         <!-- Contact -->
         <div class="col-lg-3 col-md-6">
           <h6 class="fw-semibold mb-3 text-black">Contact</h6>
-          <p class="small mb-1"><i class="fa fa-map-marker-alt me-2"></i>Thanh Nhat Ward, Dak Lak, Vietnam</p>
-          <p class="small mb-1"><i class="fa fa-envelope me-2"></i>support@OutfitVN.vn</p>
-          <p class="small mb-0"><i class="fa fa-phone me-2"></i>+84 999 888 777</p>
+          <p class="small mb-1"><i class="fa fa-map-marker-alt me-2"></i>BMT, Dak Lak, Vietnam</p>
+          <p class="small mb-1"><i class="fa fa-envelope me-2"></i>support@figurecollector.vn</p>
+          <p class="small mb-0"><i class="fa fa-phone me-2"></i>+84 123 456 789</p>
         </div>
       </div>
     </div>
@@ -151,7 +152,7 @@ const handleLogout = () => {
     <!-- Copyright -->
     <div class="footer-bottom text-center py-3 mt-4 border-top border-secondary">
       <p class="mb-0 small text-secondary">
-        &copy; 2025 <b>OutfitVN</b> — All rights reserved.
+        &copy; 2025 <b>Github</b> — All rights reserved.
       </p>
     </div>
   </footer>
@@ -174,7 +175,7 @@ body {
 }
 
 .navbar-brand img {
-  filter: brightness(0);
+  /* filter: brightness(0); */
   /* cho logo đen trắng */
 }
 
