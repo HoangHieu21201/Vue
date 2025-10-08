@@ -1,13 +1,13 @@
 <script setup>
-    import { ref } from 'vue';
+import { ref } from 'vue';
 
-    const decrease = (item) => {
-        if (item.quantity > 1)  item.quantity--
-    }
+const decrease = (item) => {
+    if (item.quantity > 1) item.quantity--
+}
 
-    const increase = (item) => {
-        if (item.quantity < 100)  item.quantity++
-    }
+const increase = (item) => {
+    if (item.quantity < 100) item.quantity++
+}
 </script>
 
 <template>
@@ -55,8 +55,8 @@
                                     <td>
                                         <div class="input-group input-group-sm mx-auto" style="width: 120px;">
                                             <button @click="decrease(item)" class="btn btn-outline-dark">-</button>
-                                            <input v-model="item.quantity" type="number" class="form-control text-center" min="0" max="100"
-                                                value="1" />
+                                            <input v-model="item.quantity" type="number"
+                                                class="form-control text-center" min="0" max="100" value="1" />
                                             <button @click="increase(item)" class="btn btn-outline-dark">+</button>
                                         </div>
                                     </td>
@@ -139,9 +139,5 @@ input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button {
     -webkit-appearance: none;
     margin: 0;
-}
-
-input[type=number] {
-    -moz-appearance: textfield;
 }
 </style>
