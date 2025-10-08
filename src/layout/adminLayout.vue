@@ -4,8 +4,7 @@
             <!-- Sidebar -->
             <aside class="sidebar bg-dark text-white p-3">
                 <router-link class="navbar-brand d-flex align-items-center" to="/">
-                    <img src="https://www.accuratereviews.com/wp-content/uploads/2021/07/outfit-logo-padding.png"
-                        alt="logo" width="110" class="me-2" />
+                    <span>Home</span>
                 </router-link>
                 <ul class="list-unstyled d-flex flex-column gap-2">
                     <li>

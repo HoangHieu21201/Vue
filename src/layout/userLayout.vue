@@ -31,8 +31,7 @@ const handleLogout = () => {
       <div class="container">
         <!-- Logo -->
         <router-link class="navbar-brand d-flex align-items-center" to="/">
-          <img src="https://www.accuratereviews.com/wp-content/uploads/2021/07/outfit-logo-padding.png" alt="logo"
-            width="110" class="me-2" />
+          Home
         </router-link>
 
         <!-- Toggle (mobile) -->
