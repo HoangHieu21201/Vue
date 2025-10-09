@@ -12,8 +12,8 @@
         <!-- Ảnh + mô tả -->
         <div class="row align-items-center mb-5">
             <div class="col-md-6 mb-4 mb-md-0">
-                <img src="https://images.unsplash.com/photo-1521335629791-ce4aec67dd53?auto=format&fit=crop&w=800&q=80"
-                    class="img-fluid rounded shadow-sm" alt="about" />
+                <img src="https://figurecollector.io.vn/wp-content/uploads/2025/09/chibi-768x1152.png"
+                    class="img-fluid rounded shadow-sm" alt="about" width="300"/>
             </div>
             <div class="col-md-6">
                 <h4 class="fw-bold mb-3">Tầm nhìn & Sứ mệnh</h4>
@@ -56,13 +56,13 @@
         <div class="text-center mt-5">
             <h5 class="fw-bold mb-3">Liên hệ với chúng tôi</h5>
             <p class="text-muted mb-1">
-                <i class="fa fa-envelope me-2"></i>support@minhstore.vn
+                <i class="fa fa-envelope me-2"></i>support@figurecollector.vn
             </p>
             <p class="text-muted mb-1">
                 <i class="fa fa-phone me-2"></i>0123 456 789
             </p>
             <p class="text-muted mb-0">
-                <i class="fa fa-map-marker me-2"></i>TP. Hồ Chí Minh, Việt Nam
+                <i class="fa fa-map-marker me-2"></i>Dak Lak, Việt Nam
             </p>
         </div>
     </div>
@@ -73,22 +73,22 @@ import { ref } from 'vue'
 
 const team = ref([
     {
-        name: 'Minh gió tai',
+        name: 'Bro 1',
         role: 'Founder & Developer',
         img: 'https://cdn-icons-png.flaticon.com/512/847/847969.png'
     },
     {
-        name: 'Hà My',
+        name: 'Brooo',
         role: 'UI/UX Designer',
         img: 'https://cdn-icons-png.flaticon.com/512/921/921071.png'
     },
     {
-        name: 'Khánh Duy',
+        name: 'Bro 2',
         role: 'Marketing Lead',
         img: 'https://cdn-icons-png.flaticon.com/512/847/847969.png'
     },
     {
-        name: 'An Nhiên',
+        name: 'Bro 2',
         role: 'Customer Support',
         img: 'https://cdn-icons-png.flaticon.com/512/921/921071.png'
     }

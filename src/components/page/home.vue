@@ -5,6 +5,11 @@ import axios from 'axios'
 const category = ref([])
 const products = ref([])
 
+const API = import.meta.env.VITE_URL_API || 'http://localhost:3000'
+onMounted(async () => {
+  Loadulieu()
+})
+
 const scrollContainer = ref(null)
 const scrollLeft = () => scrollContainer.value.scrollBy({ left: -350, behavior: 'smooth' })
 const scrollRight = () => scrollContainer.value.scrollBy({ left: 350, behavior: 'smooth' })
@@ -43,9 +48,9 @@ onMounted(() => {
     <section class="hero d-flex justify-content-center align-items-center text-center text-white">
       <div class="overlay"></div>
       <div class="content">
-        <h1 class="fw-bold display-4 mb-3">Sport Men's Fashion</h1>
-        <p class="lead mb-4">Style, quality, and your own personality</p>
-        <button class="btn btn-light fw-semibold px-4 py-2">Shop Now</button>
+        <h1 class="fw-bold display-4 mb-3">Figure Collector</h1>
+        <p class="lead mb-4">Gundam, Figure, Gunpla and Figure custom</p>
+        <button class="btn btn-light fw-semibold px-4 py-2">Buy Now</button>
       </div>
     </section>
 
@@ -131,7 +136,7 @@ onMounted(() => {
 /* HERO */
 .hero {
   position: relative;
-  background: url("https://images.unsplash.com/photo-1503341455253-b2e723bb3dbb?auto=format&fit=crop&w=1600&q=80") center/cover no-repeat;
+  background: url("https://scontent.fsgn2-7.fna.fbcdn.net/v/t39.30808-6/557496633_4276803882603869_3670088248656144308_n.jpg?_nc_cat=100&ccb=1-7&_nc_sid=cc71e4&_nc_ohc=gAwhNF6vYmIQ7kNvwFESM7U&_nc_oc=Adn7BMRogvLxaW2WnksGno-Vg_pRhKDBl1pHInCHzG4tiFY_iX78EkexyjgN5xcabVM&_nc_zt=23&_nc_ht=scontent.fsgn2-7.fna&_nc_gid=dKAUTX5IpTKAZzzf5o6glw&oh=00_AfdJcoSITdcN-PhkWas8n9CwjBHNW8cJWdB8fGzCzPvwCA&oe=68ED8FAC") center/cover no-repeat;
   height: 80vh;
 }
 

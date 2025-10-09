@@ -4,29 +4,29 @@
             <!-- Sidebar -->
             <aside class="sidebar bg-dark text-white p-3">
                 <router-link class="navbar-brand d-flex align-items-center" to="/">
-                    <span>Home</span>
+                    <img src="../assets/logovuong.jpg" alt="" width="50" style="border-radius: 50px;"> <span>figurecollector</span>
                 </router-link>
                 <ul class="list-unstyled d-flex flex-column gap-2">
                     <li>
                         <router-link to="/admin/user" class="nav-link" active-class="active-link">
-                            👤 Users
+                            👤 Tài khoản
                         </router-link>
                     </li>
                     <li>
                         <router-link to="/admin/categories" class="nav-link" active-class="active-link">
-                            📦 Categories
+                            📦 Danh mục
                         </router-link>
                     </li>
                     <li>
                         <router-link to="/admin/product" class="nav-link" active-class="active-link">
-                            📦 Products
+                            📦 Sản phẩm
                         </router-link>
                     </li>
                 </ul>
 
                 <div class="mt-auto text-center pt-4 border-top border-secondary">
                     <router-link to="/" class="btn btn-outline-light btn-sm w-100">
-                        ← Back to User Site
+                        Trở về trang chủ
                     </router-link>
                 </div>
             </aside>
