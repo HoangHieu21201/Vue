@@ -1,6 +1,9 @@
 <script setup>
 import { ref } from 'vue';
 
+const category = ref([])
+const products = ref([])
+
 const decrease = (item) => {
     if (item.quantity > 1) item.quantity--
 }
@@ -37,32 +40,34 @@ const increase = (item) => {
                                 </tr>
                             </thead>
                             <tbody class="text-center">
-                                <tr v-for="item in 3" :key="n">
+                                <tr v-for="items in cart" :key="items.id">
                                     <td>
                                         <div class="d-flex align-items-center text-start">
-                                            <img src="https://down-vn.img.susercontent.com/file/sg-11134201-7rbmj-m1cj7n2e9b2g8c"
-                                                class="rounded me-3 border" width="70" />
+                                            <img :src="items.image" class="rounded me-3 border" width="70" />
                                             <div>
-                                                <h6 class="mb-0">Áo Thun Nam Basic</h6>
+                                                <h6 class="mb-0">{{ items.name }}</h6>
                                                 <small class="text-muted">Danh mục: Thời trang</small>
                                             </div>
                                         </div>
                                     </td>
                                     <td>
-                                        <span class="text-danger fw-semibold">150.000 ₫</span><br />
-                                        <small class="text-muted text-decoration-line-through">200.000 ₫</small>
+                                        <span class="text-danger fw-semibold">{{
+                                            Number(items.discount).toLocaleString('vi-VN') }} ₫</span><br />
+                                        <small class="text-muted text-decoration-line-through">{{
+                                            Number(items.price).toLocaleString('vi-VN') }} ₫</small>
                                     </td>
                                     <td>
                                         <div class="input-group input-group-sm mx-auto" style="width: 120px;">
-                                            <button @click="decrease(item)" class="btn btn-outline-dark">-</button>
-                                            <input v-model="item.quantity" type="number"
+                                            <button @click="decrease(items)" class="btn btn-outline-dark">-</button>
+                                            <input v-model="items.quantity" type="number"
                                                 class="form-control text-center" min="0" max="100" value="1" />
-                                            <button @click="increase(item)" class="btn btn-outline-dark">+</button>
+                                            <button @click="increase(items)" class="btn btn-outline-dark">+</button>
                                         </div>
                                     </td>
-                                    <td class="fw-semibold">150.000 ₫</td>
+                                    <td class="fw-semibold">{{ (items.discount * items.quantity).toLocaleString('vi-VN')
+                                    }} ₫</td>
                                     <td>
-                                        <button class="btn btn-sm btn-danger">
+                                        <button @click="deleteCart(items.id)" class="btn btn-sm btn-danger">
                                             <i class="fa fa-trash"></i>
                                         </button>
                                     </td>
@@ -70,11 +75,11 @@ const increase = (item) => {
                             </tbody>
                         </table>
                     </div>
-                </div>
+                </div>  
 
-                <div class="text-end mt-3">
+                <div class="text-end mt-3" v-if="products.length">
                     <button class="btn btn-outline-danger btn-sm">
-                        <i class="fa fa-trash me-1"></i> Delete All
+                        <i class="fa fa-trash me-1"></i> Xoá hết
                     </button>
                 </div>
             </div>
@@ -82,26 +87,26 @@ const increase = (item) => {
             <div class="col-lg-4">
                 <div class="card border-0 shadow-sm">
                     <div class="card-body">
-                        <h5 class="fw-bold mb-3">Order Summary</h5>
+                        <h5 class="fw-bold mb-3">Đơn hàng</h5>
 
                         <div class="d-flex justify-content-between mb-2">
-                            <span>Provisional</span>
+                            <span>Tạm tính</span>
                             <span>450.000 ₫</span>
                         </div>
 
                         <div class="d-flex justify-content-between mb-2">
-                            <span>Shipping Fee</span>
+                            <span>Phí vận chuyển</span>
                             <span class="text-success">Miễn phí</span>
                         </div>
 
                         <hr />
 
                         <div class="d-flex justify-content-between fw-bold">
-                            <span>Total</span>
+                            <span>Tổng cộng</span>
                             <span class="text-danger">450.000 ₫</span>
                         </div>
 
-                        <button class="btn btn-dark w-100 mt-4 fw-semibold">Pay Now</button>
+                        <button class="btn btn-dark w-100 mt-4 fw-semibold">Mua ngay</button>
                     </div>
                 </div>
             </div>
