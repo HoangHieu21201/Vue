@@ -5,7 +5,17 @@ import axios from 'axios';
 
 const router = useRouter()
 const user = ref(null)
+const cartItemCount = ref(0);
 
+const fetchCartCount = async () => {
+  try {
+    const { data } = await axios.get('http://localhost:3000/cart');
+    cartItemCount.value = data.length;
+  } catch (error) {
+    console.error("Lỗi khi lấy số lượng giỏ hàng:", error);
+    cartItemCount.value = 0;
+  }
+};
 onMounted(async () => {
   const storedUser = JSON.parse(localStorage.getItem('loggedInUser'))
   if (storedUser) {
@@ -16,6 +26,7 @@ onMounted(async () => {
       console.error(err)
     }
   }
+  fetchCartCount();
 })
 
 const handleLogout = () => {
@@ -44,16 +55,16 @@ const handleLogout = () => {
         <div class="collapse navbar-collapse" id="navbarNav">
           <ul class="navbar-nav mx-auto text-center gap-lg-4">
             <li class="nav-item">
-              <router-link class="nav-link" to="/">Home</router-link>
+              <router-link class="nav-link" to="/">Trang chủ </router-link>
             </li>
             <li class="nav-item">
-              <router-link class="nav-link" to="/shop">Shop</router-link>
+              <router-link class="nav-link" to="/shop">Cửa hàng</router-link>
             </li>
             <li class="nav-item">
               <router-link class="nav-link" to="/about">About</router-link>
             </li>
             <li class="nav-item">
-              <router-link class="nav-link" to="/profile">Profile</router-link>
+              <router-link class="nav-link" to="/profile">Hồ sơ</router-link>
             </li>
           </ul>
 
@@ -79,9 +90,10 @@ const handleLogout = () => {
 
             <div class="position-relative">
               <router-link to="/cart"><i class="fa-solid fa-cart-shopping fs-5 text-dark"></i></router-link>
-              <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+              <span v-if="cartItemCount > 0"
+                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
                 style="font-size: 10px;">
-                2
+                {{ cartItemCount }}
               </span>
             </div>
 

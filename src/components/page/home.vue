@@ -123,7 +123,7 @@ onMounted(() => {
                 <p class="fw-bold mb-2">{{ Number(item.price).toLocaleString('vi-VN') }} ₫</p>
               </template>
 
-              <button class="btn btn-dark btn-sm mt-1">Add to Cart</button>
+              <button class="btn btn-dark btn-sm mt-1">Xem chi tiết</button>
             </div>
           </router-link>
         </div>

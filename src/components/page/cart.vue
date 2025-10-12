@@ -1,30 +1,84 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted, computed } from 'vue';
+import { RouterLink } from 'vue-router';
+import axios from 'axios';
 
-const category = ref([])
-const products = ref([])
+const cart = ref([]);
+
+const readCart = async () => {
+    try {
+        const { data } = await axios.get('http://localhost:3000/cart');
+        cart.value = data;
+    } catch (err) {
+        console.error('Lỗi khi tải giỏ hàng:', err);
+    }
+}
+
+const updateQuantity = async (item, newQuantity) => {
+    if (newQuantity < 1 || newQuantity > 100) return;
+    try {
+        const { data } = await axios.patch(`http://localhost:3000/cart/${item.id}`, {
+            quantity: newQuantity
+        });
+        const index = cart.value.findIndex(cartItem => cartItem.id === item.id);
+        if (index !== -1) {
+            cart.value[index] = data;
+        }
+    } catch (err) {
+        console.error('Lỗi khi cập nhật số lượng:', err);
+    }
+}
 
 const decrease = (item) => {
-    if (item.quantity > 1) item.quantity--
+    updateQuantity(item, item.quantity - 1);
 }
 
 const increase = (item) => {
-    if (item.quantity < 100) item.quantity++
+    updateQuantity(item, item.quantity + 1);
 }
+
+const deleteCartItem = async (itemId) => {
+    try {
+        await axios.delete(`http://localhost:3000/cart/${itemId}`);
+        cart.value = cart.value.filter(item => item.id !== itemId);
+    } catch (err) {
+        console.error('Lỗi khi xóa sản phẩm:', err);
+    }
+}
+
+const deleteAllCart = async () => {
+    try {
+        const deletePromises = cart.value.map(item => axios.delete(`http://localhost:3000/cart/${item.id}`));
+        await Promise.all(deletePromises);
+        cart.value = [];
+    } catch (err) {
+        console.error('Lỗi khi xóa toàn bộ giỏ hàng:', err);
+    }
+}
+
+const subtotal = computed(() => {
+    return cart.value.reduce((total, item) => total + (item.discount * item.quantity), 0);
+});
+
+const total = computed(() => {
+    return subtotal.value; 
+});
+
+onMounted(() => {
+    readCart();
+});
 </script>
 
 <template>
     <div class="container my-5">
         <h2 class="fw-bold mb-4 text-center">🛒 Your Cart</h2>
 
-        <!-- Nếu giỏ hàng trống -->
-        <div class="text-center text-muted py-5" v-if="false">
+        <div class="text-center text-muted py-5" v-if="cart.length === 0">
             <i class="fa fa-shopping-cart fa-3x mb-3"></i>
             <p>Giỏ hàng của bạn đang trống</p>
-            <button class="btn btn-dark">Continue Shopping</button>
+            <RouterLink to="/shop" class="btn btn-dark">Continue Shopping</RouterLink>
         </div>
 
-        <!-- Danh sách sản phẩm -->
         <div class="row g-4" v-else>
             <div class="col-lg-8">
                 <div class="card border-0 shadow-sm">
@@ -40,34 +94,34 @@ const increase = (item) => {
                                 </tr>
                             </thead>
                             <tbody class="text-center">
-                                <tr v-for="items in cart" :key="items.id">
+                                <tr v-for="item in cart" :key="item.id">
                                     <td>
                                         <div class="d-flex align-items-center text-start">
-                                            <img :src="items.image" class="rounded me-3 border" width="70" />
+                                            <img :src="item.image[0]" class="rounded me-3 border" width="70" />
                                             <div>
-                                                <h6 class="mb-0">{{ items.name }}</h6>
-                                                <small class="text-muted">Danh mục: Thời trang</small>
+                                                <h6 class="mb-0">{{ item.name }}</h6>
                                             </div>
                                         </div>
                                     </td>
                                     <td>
                                         <span class="text-danger fw-semibold">{{
-                                            Number(items.discount).toLocaleString('vi-VN') }} ₫</span><br />
+                                            Number(item.discount).toLocaleString('vi-VN') }} ₫</span><br />
                                         <small class="text-muted text-decoration-line-through">{{
-                                            Number(items.price).toLocaleString('vi-VN') }} ₫</small>
+                                            Number(item.price).toLocaleString('vi-VN') }} ₫</small>
                                     </td>
                                     <td>
                                         <div class="input-group input-group-sm mx-auto" style="width: 120px;">
-                                            <button @click="decrease(items)" class="btn btn-outline-dark">-</button>
-                                            <input v-model="items.quantity" type="number"
-                                                class="form-control text-center" min="0" max="100" value="1" />
-                                            <button @click="increase(items)" class="btn btn-outline-dark">+</button>
+                                            <button @click="decrease(item)" class="btn btn-outline-dark">-</button>
+                                            <input :value="item.quantity"
+                                                @input="updateQuantity(item, Number($event.target.value))" type="number"
+                                                class="form-control text-center" min="1" max="100" />
+                                            <button @click="increase(item)" class="btn btn-outline-dark">+</button>
                                         </div>
                                     </td>
-                                    <td class="fw-semibold">{{ (items.discount * items.quantity).toLocaleString('vi-VN')
-                                    }} ₫</td>
+                                    <td class="fw-semibold">{{ (item.discount * item.quantity).toLocaleString('vi-VN')
+                                        }} ₫</td>
                                     <td>
-                                        <button @click="deleteCart(items.id)" class="btn btn-sm btn-danger">
+                                        <button @click="deleteCartItem(item.id)" class="btn btn-sm btn-danger">
                                             <i class="fa fa-trash"></i>
                                         </button>
                                     </td>
@@ -75,10 +129,10 @@ const increase = (item) => {
                             </tbody>
                         </table>
                     </div>
-                </div>  
+                </div>
 
-                <div class="text-end mt-3" v-if="products.length">
-                    <button class="btn btn-outline-danger btn-sm">
+                <div class="text-end mt-3" v-if="cart.length">
+                    <button @click="deleteAllCart" class="btn btn-outline-danger btn-sm">
                         <i class="fa fa-trash me-1"></i> Xoá hết
                     </button>
                 </div>
@@ -91,7 +145,7 @@ const increase = (item) => {
 
                         <div class="d-flex justify-content-between mb-2">
                             <span>Tạm tính</span>
-                            <span>450.000 ₫</span>
+                            <span>{{ subtotal.toLocaleString('vi-VN') }} ₫</span>
                         </div>
 
                         <div class="d-flex justify-content-between mb-2">
@@ -103,7 +157,7 @@ const increase = (item) => {
 
                         <div class="d-flex justify-content-between fw-bold">
                             <span>Tổng cộng</span>
-                            <span class="text-danger">450.000 ₫</span>
+                            <span class="text-danger">{{ total.toLocaleString('vi-VN') }} ₫</span>
                         </div>
 
                         <button class="btn btn-dark w-100 mt-4 fw-semibold">Mua ngay</button>
@@ -125,7 +179,7 @@ table img {
     height: 70px;
 }
 
-input[type="text"] {
+input[type="number"] {
     border: 1px solid #ddd;
 }
 

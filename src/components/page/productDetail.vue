@@ -25,6 +25,31 @@ const readCategories = async () => {
     }
 }
 
+const addToCart = async () => {
+    if (!product.value) return;
+
+    try {
+        const { data: existingItems } = await axios.get(`http://localhost:3000/cart?id=${product.value.id}`);
+        const existingItem = existingItems[0];
+
+        if (existingItem) {
+            await axios.patch(`http://localhost:3000/cart/${existingItem.id}`, {
+                quantity: existingItem.quantity + 1
+            });
+            alert('Đã cập nhật số lượng sản phẩm trong giỏ hàng!');
+        } else {
+            const cartItem = {
+                ...product.value,
+                quantity: 1
+            };
+            await axios.post('http://localhost:3000/cart', cartItem);
+            alert('Đã thêm sản phẩm vào giỏ hàng!');
+        }
+    } catch (err) {
+        console.error('Lỗi khi thêm vào giỏ hàng:', err);
+        alert('Có lỗi xảy ra, vui lòng thử lại.');
+    }
+}
 
 onMounted(() => {
     readProductDetail()
@@ -50,7 +75,7 @@ onMounted(() => {
                     <h2 class="fw-bold mb-2">{{ product.name }}</h2>
 
                     <p class="text-muted mb-1">
-                        Category:
+                        Danh mục:
                         {{categories.find(c => c.id === product.categoryId)?.nameCategory || "Không có"}}
                     </p>
 
@@ -70,7 +95,7 @@ onMounted(() => {
                         Đôi giày huyền thoại mang phong cách cổ điển, chất liệu da cao cấp,
                         đế cao su chống trơn trượt. Phù hợp cho mọi phong cách thời trang.
                     </p>
-
+                    <!-- 
                     <div class="mt-4">
                         <p class="fw-semibold mb-2">Choose size:</p>
                         <div class="d-flex flex-wrap gap-2">
@@ -80,11 +105,11 @@ onMounted(() => {
                             <button class="btn btn-outline-dark rounded-pill px-3 py-1">41</button>
                             <button class="btn btn-outline-dark rounded-pill px-3 py-1">42</button>
                         </div>
-                    </div>
+                    </div> -->
 
                     <div class="mt-4 d-flex gap-3">
-                        <button class="btn btn-dark px-4 py-2">
-                            <i class="fa fa-shopping-cart me-2"></i>Add to cart
+                        <button @click="addToCart" class="btn btn-dark px-4 py-2">
+                            <i class="fa fa-shopping-cart me-2"></i>Thêm vào giỏ hàng
                         </button>
                         <button class="btn btn-outline-dark px-4 py-2">
                             <i class="fa fa-heart me-2"></i>Favorite
