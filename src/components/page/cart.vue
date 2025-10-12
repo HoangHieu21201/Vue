@@ -1,82 +1,44 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { computed } from 'vue';
+import { useStore } from 'vuex';
 import { RouterLink } from 'vue-router';
-import axios from 'axios';
 
-const cart = ref([]);
+const store = useStore();
 
-const readCart = async () => {
-    try {
-        const { data } = await axios.get('http://localhost:3000/cart');
-        cart.value = data;
-    } catch (err) {
-        console.error('Lỗi khi tải giỏ hàng:', err);
-    }
-}
+// Lấy dữ liệu từ Vuex store thay vì gọi API
+const cart = computed(() => store.getters['cart/cartItems']);
+const subtotal = computed(() => store.getters['cart/cartTotal']);
+const total = computed(() => store.getters['cart/cartTotal']); // Giả sử tổng tiền bằng tạm tính
 
-const updateQuantity = async (item, newQuantity) => {
-    if (newQuantity < 1 || newQuantity > 100) return;
-    try {
-        const { data } = await axios.patch(`http://localhost:3000/cart/${item.id}`, {
-            quantity: newQuantity
-        });
-        const index = cart.value.findIndex(cartItem => cartItem.id === item.id);
-        if (index !== -1) {
-            cart.value[index] = data;
-        }
-    } catch (err) {
-        console.error('Lỗi khi cập nhật số lượng:', err);
-    }
-}
-
+// Dispatch actions để thay đổi trạng thái thay vì gọi API trực tiếp
 const decrease = (item) => {
-    updateQuantity(item, item.quantity - 1);
-}
+    store.dispatch('cart/decreaseProductQuantity', item.id);
+};
 
 const increase = (item) => {
-    updateQuantity(item, item.quantity + 1);
-}
+    store.dispatch('cart/increaseProductQuantity', item.id);
+};
 
-const deleteCartItem = async (itemId) => {
-    try {
-        await axios.delete(`http://localhost:3000/cart/${itemId}`);
-        cart.value = cart.value.filter(item => item.id !== itemId);
-    } catch (err) {
-        console.error('Lỗi khi xóa sản phẩm:', err);
-    }
-}
+const deleteCartItem = (itemId) => {
+    store.dispatch('cart/deleteProductFromCart', itemId);
+};
 
-const deleteAllCart = async () => {
-    try {
-        const deletePromises = cart.value.map(item => axios.delete(`http://localhost:3000/cart/${item.id}`));
-        await Promise.all(deletePromises);
-        cart.value = [];
-    } catch (err) {
-        console.error('Lỗi khi xóa toàn bộ giỏ hàng:', err);
-    }
-}
+const deleteAllCart = () => {
+    store.dispatch('cart/clearCart');
+};
 
-const subtotal = computed(() => {
-    return cart.value.reduce((total, item) => total + (item.discount * item.quantity), 0);
-});
-
-const total = computed(() => {
-    return subtotal.value; 
-});
-
-onMounted(() => {
-    readCart();
-});
+// Bạn có thể gọi một action để tải dữ liệu giỏ hàng khi component được tạo
+// store.dispatch('cart/fetchCartItems'); // Action này cần được định nghĩa trong store
 </script>
 
 <template>
     <div class="container my-5">
         <h2 class="fw-bold mb-4 text-center">🛒 Your Cart</h2>
 
-        <div class="text-center text-muted py-5" v-if="cart.length === 0">
+        <div class="text-center text-muted py-5" v-if="!cart.length">
             <i class="fa fa-shopping-cart fa-3x mb-3"></i>
             <p>Giỏ hàng của bạn đang trống</p>
-            <RouterLink to="/shop" class="btn btn-dark">Continue Shopping</RouterLink>
+            <RouterLink to="/" class="btn btn-dark">Continue Shopping</RouterLink>
         </div>
 
         <div class="row g-4" v-else>
@@ -97,29 +59,25 @@ onMounted(() => {
                                 <tr v-for="item in cart" :key="item.id">
                                     <td>
                                         <div class="d-flex align-items-center text-start">
-                                            <img :src="item.image[0]" class="rounded me-3 border" width="70" />
+                                            <img :src="item.image" class="rounded me-3 border" width="70" />
                                             <div>
                                                 <h6 class="mb-0">{{ item.name }}</h6>
+                                                <small class="text-muted">Danh mục: {{ item.category }}</small>
                                             </div>
                                         </div>
                                     </td>
                                     <td>
-                                        <span class="text-danger fw-semibold">{{
-                                            Number(item.discount).toLocaleString('vi-VN') }} ₫</span><br />
-                                        <small class="text-muted text-decoration-line-through">{{
-                                            Number(item.price).toLocaleString('vi-VN') }} ₫</small>
+                                        <span class="text-danger fw-semibold">{{ Number(item.discount).toLocaleString('vi-VN') }} ₫</span><br />
+                                        <small class="text-muted text-decoration-line-through">{{ Number(item.price).toLocaleString('vi-VN') }} ₫</small>
                                     </td>
                                     <td>
                                         <div class="input-group input-group-sm mx-auto" style="width: 120px;">
                                             <button @click="decrease(item)" class="btn btn-outline-dark">-</button>
-                                            <input :value="item.quantity"
-                                                @input="updateQuantity(item, Number($event.target.value))" type="number"
-                                                class="form-control text-center" min="1" max="100" />
+                                            <input :value="item.quantity" type="number" class="form-control text-center" min="1" max="100" readonly />
                                             <button @click="increase(item)" class="btn btn-outline-dark">+</button>
                                         </div>
                                     </td>
-                                    <td class="fw-semibold">{{ (item.discount * item.quantity).toLocaleString('vi-VN')
-                                        }} ₫</td>
+                                    <td class="fw-semibold">{{ (item.discount * item.quantity).toLocaleString('vi-VN') }} ₫</td>
                                     <td>
                                         <button @click="deleteCartItem(item.id)" class="btn btn-sm btn-danger">
                                             <i class="fa fa-trash"></i>
@@ -142,24 +100,19 @@ onMounted(() => {
                 <div class="card border-0 shadow-sm">
                     <div class="card-body">
                         <h5 class="fw-bold mb-3">Đơn hàng</h5>
-
                         <div class="d-flex justify-content-between mb-2">
                             <span>Tạm tính</span>
                             <span>{{ subtotal.toLocaleString('vi-VN') }} ₫</span>
                         </div>
-
                         <div class="d-flex justify-content-between mb-2">
                             <span>Phí vận chuyển</span>
                             <span class="text-success">Miễn phí</span>
                         </div>
-
                         <hr />
-
                         <div class="d-flex justify-content-between fw-bold">
                             <span>Tổng cộng</span>
                             <span class="text-danger">{{ total.toLocaleString('vi-VN') }} ₫</span>
                         </div>
-
                         <button class="btn btn-dark w-100 mt-4 fw-semibold">Mua ngay</button>
                     </div>
                 </div>
@@ -173,30 +126,20 @@ h2 {
     color: #222;
     letter-spacing: 0.5px;
 }
-
 table img {
     object-fit: cover;
     height: 70px;
 }
-
 input[type="number"] {
     border: 1px solid #ddd;
 }
-
 .card {
     border-radius: 12px;
     overflow: hidden;
     transition: 0.3s ease;
 }
-
 .card:hover {
     transform: translateY(-3px);
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-}
-
-input[type=number]::-webkit-inner-spin-button,
-input[type=number]::-webkit-outer-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
 }
 </style>
