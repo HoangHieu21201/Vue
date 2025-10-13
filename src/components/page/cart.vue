@@ -5,12 +5,10 @@ import { RouterLink } from 'vue-router';
 
 const store = useStore();
 
-// Lấy dữ liệu từ Vuex store thay vì gọi API
 const cart = computed(() => store.getters['cart/cartItems']);
 const subtotal = computed(() => store.getters['cart/cartTotal']);
-const total = computed(() => store.getters['cart/cartTotal']); // Giả sử tổng tiền bằng tạm tính
+const total = computed(() => store.getters['cart/cartTotal']);
 
-// Dispatch actions để thay đổi trạng thái thay vì gọi API trực tiếp
 const decrease = (item) => {
     store.dispatch('cart/decreaseProductQuantity', item.id);
 };
@@ -27,13 +25,11 @@ const deleteAllCart = () => {
     store.dispatch('cart/clearCart');
 };
 
-// Bạn có thể gọi một action để tải dữ liệu giỏ hàng khi component được tạo
-// store.dispatch('cart/fetchCartItems'); // Action này cần được định nghĩa trong store
 </script>
 
 <template>
     <div class="container my-5">
-        <h2 class="fw-bold mb-4 text-center">🛒 Your Cart</h2>
+        <h2 class="fw-bold mb-4 text-center">🛒 Giỏ hàng</h2>
 
         <div class="text-center text-muted py-5" v-if="!cart.length">
             <i class="fa fa-shopping-cart fa-3x mb-3"></i>
@@ -59,7 +55,7 @@ const deleteAllCart = () => {
                                 <tr v-for="item in cart" :key="item.id">
                                     <td>
                                         <div class="d-flex align-items-center text-start">
-                                            <img :src="item.image" class="rounded me-3 border" width="70" />
+                                            <img :src="item.image[0]" class="rounded me-3 border" width="70" />
                                             <div>
                                                 <h6 class="mb-0">{{ item.name }}</h6>
                                                 <small class="text-muted">Danh mục: {{ item.category }}</small>
@@ -67,17 +63,21 @@ const deleteAllCart = () => {
                                         </div>
                                     </td>
                                     <td>
-                                        <span class="text-danger fw-semibold">{{ Number(item.discount).toLocaleString('vi-VN') }} ₫</span><br />
-                                        <small class="text-muted text-decoration-line-through">{{ Number(item.price).toLocaleString('vi-VN') }} ₫</small>
+                                        <span class="text-danger fw-semibold">{{
+                                            Number(item.discount).toLocaleString('vi-VN') }} ₫</span><br />
+                                        <small class="text-muted text-decoration-line-through">{{
+                                            Number(item.price).toLocaleString('vi-VN') }} ₫</small>
                                     </td>
                                     <td>
                                         <div class="input-group input-group-sm mx-auto" style="width: 120px;">
                                             <button @click="decrease(item)" class="btn btn-outline-dark">-</button>
-                                            <input :value="item.quantity" type="number" class="form-control text-center" min="1" max="100" readonly />
+                                            <input :value="item.quantity" type="number" class="form-control text-center"
+                                                min="1" max="100" readonly />
                                             <button @click="increase(item)" class="btn btn-outline-dark">+</button>
                                         </div>
                                     </td>
-                                    <td class="fw-semibold">{{ (item.discount * item.quantity).toLocaleString('vi-VN') }} ₫</td>
+                                    <td class="fw-semibold">{{ (item.discount * item.quantity).toLocaleString('vi-VN')
+                                        }} ₫</td>
                                     <td>
                                         <button @click="deleteCartItem(item.id)" class="btn btn-sm btn-danger">
                                             <i class="fa fa-trash"></i>
@@ -126,18 +126,22 @@ h2 {
     color: #222;
     letter-spacing: 0.5px;
 }
+
 table img {
     object-fit: cover;
     height: 70px;
 }
+
 input[type="number"] {
     border: 1px solid #ddd;
 }
+
 .card {
     border-radius: 12px;
     overflow: hidden;
     transition: 0.3s ease;
 }
+
 .card:hover {
     transform: translateY(-3px);
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);

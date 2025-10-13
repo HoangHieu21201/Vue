@@ -131,29 +131,29 @@ const handleLogout = () => {
 
         <!-- Links -->
         <div class="col-lg-2 col-md-6">
-          <h6 class="fw-semibold mb-3 text-black">Quick Links</h6>
+          <h6 class="fw-semibold mb-3 text-black">Liên kết nhanh</h6>
           <ul class="list-unstyled footer-links">
-            <li><router-link to="/" class="text-decoration-none">Home</router-link></li>
-            <li><router-link to="/categories" class="text-decoration-none">Categories</router-link></li>
+            <li><router-link to="/" class="text-decoration-none">Trang chủ</router-link></li>
+            <li><router-link to="/categories" class="text-decoration-none">Danh mục</router-link></li>
             <li><router-link to="/about" class="text-decoration-none">About</router-link></li>
-            <li><router-link to="/crud" class="text-decoration-none">User</router-link></li>
+            <li><router-link to="/crud" class="text-decoration-none">Tài khoản</router-link></li>
           </ul>
         </div>
 
         <!-- Support -->
         <div class="col-lg-3 col-md-6">
-          <h6 class="fw-semibold mb-3 text-black">Support</h6>
+          <h6 class="fw-semibold mb-3 text-black">Hỗ trợ</h6>
           <ul class="list-unstyled footer-links">
-            <li><a href="#" class="text-decoration-none">FAQ</a></li>
-            <li><a href="#" class="text-decoration-none">Privacy Policy</a></li>
-            <li><a href="#" class="text-decoration-none">Terms of Service</a></li>
-            <li><a href="#" class="text-decoration-none">Contact Us</a></li>
+            <li><a href="#" class="text-decoration-none">Hỏi & Đáp</a></li>
+            <li><a href="#" class="text-decoration-none">Chính sách bảo mật</a></li>
+            <li><a href="#" class="text-decoration-none">Điều khoản dịch vụ</a></li>
+            <li><a href="#" class="text-decoration-none">Liên hệ với chúng tôi</a></li>
           </ul>
         </div>
 
         <!-- Contact -->
         <div class="col-lg-3 col-md-6">
-          <h6 class="fw-semibold mb-3 text-black">Contact</h6>
+          <h6 class="fw-semibold mb-3 text-black">Liên hệ</h6>
           <p class="small mb-1"><i class="fa fa-map-marker-alt me-2"></i>BMT, Dak Lak, Vietnam</p>
           <p class="small mb-1"><i class="fa fa-envelope me-2"></i>support@figurecollector.vn</p>
           <p class="small mb-0"><i class="fa fa-phone me-2"></i>+84 123 456 789</p>
@@ -164,7 +164,7 @@ const handleLogout = () => {
     <!-- Copyright -->
     <div class="footer-bottom text-center py-3 mt-4 border-top border-secondary">
       <p class="mb-0 small text-secondary">
-        &copy; 2025 <b>Github</b> — All rights reserved.
+        &copy; 2025 <b>Github</b> — HoangHieu21201/Vue
       </p>
     </div>
   </footer>
