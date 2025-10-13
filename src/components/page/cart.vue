@@ -25,7 +25,7 @@ const deleteAllCart = () => {
     store.dispatch('cart/clearCart');
 };
 
-</script>
+</script> 
 
 <template>
     <div class="container my-5">

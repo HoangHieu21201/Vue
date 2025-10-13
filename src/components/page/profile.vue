@@ -6,6 +6,8 @@ import Swal from 'sweetalert2'
 const user = ref({
   id: null,
   fullname: '',
+  gender: '',
+  birthdate: '',
   email: '',
   phone: '',
   address: '',
@@ -81,10 +83,10 @@ const saveChanges = async () => {
 
       <!-- Form chỉnh sửa -->
       <div>
-        <h5 class="fw-bold mb-3">Edit Profile</h5>
+        <h5 class="fw-bold mb-3">Chỉnh sửa hồ sơ</h5>
         <div class="row g-3">
           <div class="col-md-6">
-            <label class="form-label">Full Name</label>
+            <label class="form-label">Họ và tên</label>
             <input v-model="user.fullname" type="text" class="form-control" placeholder="Nhập họ tên" />
           </div>
           <div class="col-md-6">
@@ -92,17 +94,30 @@ const saveChanges = async () => {
             <input v-model="user.email" type="email" class="form-control" placeholder="Nhập email" disabled />
           </div>
           <div class="col-md-6">
-            <label class="form-label">Phone Number</label>
+            <label class="form-label">Giới tính</label>
+              <select v-model="user.gender" class="form-select">
+                <option value="" disabled>Chọn giới tính</option>
+                <option value="male">Nam</option>
+                <option value="female">Nữ</option>
+                <option value="other">Khác</option>
+              </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Số điện thoại</label>
             <input v-model="user.phone" type="text" class="form-control" placeholder="Nhập số điện thoại" />
           </div>
           <div class="col-md-6">
-            <label class="form-label">Address</label>
-            <input v-model="user.address" type="text" class="form-control" placeholder="Nhập địa chỉ" />
+            <label class="form-label">Ngày sinh</label>
+            <input v-model="user.birthdate" type="date" class="form-control" />
           </div>
           <div class="col-md-6">
+            <label class="form-label">Địa chỉ</label>
+            <input v-model="user.address" type="text" class="form-control" placeholder="Nhập địa chỉ" />
+          </div>
+          <!-- <div class="col-md-6">
             <label class="form-label">New Password</label>
             <input v-model="user.password" type="password" class="form-control" placeholder="Nhập mật khẩu mới" />
-          </div>
+          </div> -->
         </div>
 
         <div class="mt-4 d-flex gap-3">
