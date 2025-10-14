@@ -1,9 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { useStore } from 'vuex';
 
-const store = useStore();
 const router = useRouter();
 const orders = ref([]);
 const user = ref(null);
@@ -13,7 +11,8 @@ onMounted(async () => {
     if (loggedUser) {
         user.value = loggedUser;
         try {
-            const response = await fetch(`http://localhost:3000/orders?userId=${loggedUser.id}`);
+            // Sắp xếp đơn hàng theo ngày tạo mới nhất
+            const response = await fetch(`http://localhost:3000/orders?userId=${loggedUser.id}&_sort=createdAt&_order=desc`);
             orders.value = await response.json();
         } catch (error) {
             console.error('Failed to fetch orders:', error);
@@ -39,18 +38,43 @@ const cancelOrder = async (orderId) => {
     }
 };
 
-// 🆕 MUA LẠI — Thêm sản phẩm cũ vào giỏ và chuyển sang trang checkout
-const reOrder = (oldOrder) => {
+// 🆕 CẬP NHẬT LOGIC MUA LẠI
+const reOrder = async (oldOrder) => {
     if (!user.value) return alert('Vui lòng đăng nhập!');
 
-    // Xóa giỏ hàng hiện tại và thêm sản phẩm cũ
-    store.dispatch('cart/deleteAllCart');
-    oldOrder.items.forEach(item => {
-        store.dispatch('cart/addToCart', { ...item });
-    });
+    if (confirm('Bạn có muốn đặt lại đơn hàng này với thông tin và sản phẩm tương tự?')) {
+        // Tạo một đối tượng đơn hàng mới dựa trên đơn hàng cũ
+        const newOrder = {
+            userId: user.value.id,
+            customerName: oldOrder.customerName,
+            customerAddress: oldOrder.customerAddress,
+            customerPhone: oldOrder.customerPhone,
+            items: oldOrder.items, // Giữ nguyên các sản phẩm
+            total: oldOrder.total, // Giữ nguyên tổng tiền
+            status: 'Chờ xác nhận', // Trạng thái chờ duyệt
+            createdAt: new Date().toISOString() // Ngày tạo mới
+        };
 
-    alert('Đã thêm sản phẩm vào giỏ hàng. Vui lòng kiểm tra lại và thanh toán.');
-    router.push('/checkout');
+        try {
+            const response = await fetch('http://localhost:3000/orders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newOrder)
+            });
+
+            if (response.ok) {
+                const createdOrder = await response.json();
+                // Thêm đơn hàng mới vào đầu danh sách để người dùng thấy ngay
+                orders.value.unshift(createdOrder);
+                alert('Đã đặt lại đơn hàng thành công! Đơn hàng mới đang chờ được xác nhận.');
+            } else {
+                alert('Đặt lại đơn hàng thất bại. Vui lòng thử lại.');
+            }
+        } catch (error) {
+            console.error('Failed to re-order:', error);
+            alert('Có lỗi xảy ra khi đặt lại đơn hàng.');
+        }
+    }
 };
 </script>
 
@@ -70,11 +94,10 @@ const reOrder = (oldOrder) => {
 
         <div v-else class="orders-wrapper">
             <div v-for="order in orders" :key="order.id" class="order-card">
-                <!-- Header -->
                 <div class="order-header">
                     <div>
                         <h5>Đơn hàng #{{ order.id }}</h5>
-                        <p class="date">Ngày đặt: {{ new Date(order.createdAt).toLocaleDateString('vi-VN') }}</p>
+                        <p class="date">Ngày đặt: {{ new Date(order.createdAt).toLocaleString('vi-VN') }}</p>
                     </div>
                     <span class="status" :class="{
                         'status-success': order.status === 'Đã giao',
@@ -83,14 +106,10 @@ const reOrder = (oldOrder) => {
                     }">{{ order.status }}</span>
                 </div>
 
-                <!-- Product list -->
                 <div class="order-products">
                     <div v-for="item in order.items" :key="item.id" class="product-item">
-                        <img
-                            :src="item.image?.[0] || 'https://via.placeholder.com/100x100?text=No+Image'"
-                            alt="product image"
-                            class="product-image"
-                        />
+                        <img :src="item.image?.[0] || 'https://via.placeholder.com/100x100?text=No+Image'"
+                            alt="product image" class="product-image" />
                         <div class="product-info">
                             <h6 class="product-name">{{ item.name }}</h6>
                             <p class="product-desc text-muted">{{ item.description?.slice(0, 60) }}...</p>
@@ -104,7 +123,6 @@ const reOrder = (oldOrder) => {
                     </div>
                 </div>
 
-                <!-- Footer -->
                 <div class="order-footer">
                     <div class="order-summary">
                         <p class="fw-semibold">Tổng tiền:</p>
@@ -113,18 +131,12 @@ const reOrder = (oldOrder) => {
                         </p>
                     </div>
                     <div class="order-actions">
-                        <button
-                            v-if="order.status === 'Chờ xác nhận' || order.status === 'Đang giao'"
-                            @click="cancelOrder(order.id)"
-                            class="btn btn-cancel"
-                        >
+                        <button v-if="order.status === 'Chờ xác nhận'" @click="cancelOrder(order.id)"
+                            class="btn btn-cancel">
                             <i class="fas fa-times me-1"></i> Hủy đơn
                         </button>
-                        <button
-                            v-if="order.status === 'Đã hủy' || order.status === 'Đã giao'"
-                            @click="reOrder(order)"
-                            class="btn btn-reorder"
-                        >
+                        <button v-if="order.status === 'Đã hủy' || order.status === 'Đã giao'" @click="reOrder(order)"
+                            class="btn btn-reorder">
                             <i class="fas fa-redo me-1"></i> Mua lại
                         </button>
                     </div>
@@ -158,7 +170,7 @@ const reOrder = (oldOrder) => {
     border-radius: 14px;
     padding: 60px 20px;
     color: #666;
-    box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.05);
 }
 
 .btn-shop {

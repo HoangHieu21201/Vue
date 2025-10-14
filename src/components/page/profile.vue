@@ -31,30 +31,15 @@ onMounted(async () => {
   }
 });
 
-const cancelOrder = async (orderId) => {
-  if (confirm('Bạn có chắc chắn muốn hủy đơn hàng này?')) {
-    try {
-      await fetch(`http://localhost:3000/orders/${orderId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'Đã hủy' })
-      });
-      const order = orders.value.find(o => o.id === orderId);
-      if (order) order.status = 'Đã hủy';
-    } catch (error) {
-      console.error('Failed to cancel order:', error);
-    }
-  }
-};
-
-const reOrder = (order) => {
-  // This functionality would require adding items back to the cart
-  // For simplicity, we'll just log it for now
-  console.log('Re-ordering:', order);
-  alert('Chức năng Mua lại đang được phát triển!');
-};
-
 const saveChanges = async () => {
+  if (!user.value.fullname || !user.value.email || !user.value.phone || !user.value.address) {
+    return Swal.fire({
+      icon: 'warning',
+      title: 'Thiếu thông tin!',
+      text: 'Vui lòng điền đầy đủ các trường bắt buộc.',
+      confirmButtonColor: '#000'
+    });
+  }
   try {
     await axios.put(`http://localhost:3000/user/${user.value.id}`, user.value)
     localStorage.setItem('loggedInUser', JSON.stringify(user.value))
@@ -98,7 +83,7 @@ const saveChanges = async () => {
           <span class="badge bg-dark mt-2 text-uppercase" style="color: red;">{{ user.role }}</span>
         </div>
       </div>
-      
+
       <hr class="my-4" />
 
       <!-- Form chỉnh sửa -->
@@ -107,11 +92,11 @@ const saveChanges = async () => {
         <div class="row g-3">
           <div class="col-md-6">
             <label class="form-label">Họ và tên</label>
-            <input v-model="user.fullname" type="text" class="form-control" placeholder="Nhập họ tên" />
+            <input v-model="user.fullname" type="text" class="form-control" placeholder="Nhập họ tên" required/>
           </div>
           <div class="col-md-6">
             <label class="form-label">Email</label>
-            <input v-model="user.email" type="email" class="form-control" placeholder="Nhập email" disabled />
+            <input v-model="user.email" type="email" class="form-control" placeholder="Nhập email" disabled required/>
           </div>
           <div class="col-md-6">
             <label class="form-label">Giới tính</label>
@@ -124,15 +109,15 @@ const saveChanges = async () => {
           </div>
           <div class="col-md-6">
             <label class="form-label">Số điện thoại</label>
-            <input v-model="user.phone" type="text" class="form-control" placeholder="Nhập số điện thoại" />
+            <input v-model="user.phone" type="text" class="form-control" placeholder="Nhập số điện thoại" required/>
           </div>
           <div class="col-md-6">
             <label class="form-label">Ngày sinh</label>
-            <input v-model="user.birthdate" type="date" class="form-control" />
+            <input v-model="user.birthdate" type="date" class="form-control" required/>
           </div>
           <div class="col-md-6">
-            <label class="form-label">Địa chỉ</label>
-            <input v-model="user.address" type="text" class="form-control" placeholder="Nhập địa chỉ" />
+            <label class="form-label" >Địa chỉ</label>
+            <input v-model="user.address" type="text" class="form-control" placeholder="Nhập địa chỉ" required/>
           </div>
           <!-- <div class="col-md-6">
             <label class="form-label">New Password</label>
@@ -141,18 +126,18 @@ const saveChanges = async () => {
         </div>
 
         <div class="mt-4 d-flex gap-3">
-          <button class="btn btn-dark px-4 py-2" @click="saveChanges">
-            <i class="fa fa-save me-2"></i>Save Proflie
+          <button class="btn btn-success px-4 py-2" @click="saveChanges">
+            <i class="fa fa-save me-2"></i>Lưu hồ sơ
           </button>
-          <button class="btn btn-outline-dark px-4 py-2">
+          <!-- <button class="btn btn-outline-dark px-4 py-2">
             <i class="fa fa-times me-2"></i>Cancel
-          </button>
-          <RouterLink to="/order-history" class="btn btn-dark fw-semibold">
-        <i class="fas fa-receipt me-2"></i> Xem lịch sử đơn hàng
-      </RouterLink>
+          </button> -->
+          <RouterLink to="/order-history" class="btn btn-primary fw-semibold">
+            <i class="fas fa-receipt me-2"></i> Xem lịch sử đơn hàng
+          </RouterLink>
         </div>
       </div>
-      
+
     </div>
   </div>
 </template>

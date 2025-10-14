@@ -119,7 +119,7 @@ watch(sortOption, () => {
                 </div>
                 <span class="badge bg-danger ms-2">{{ coupon.discount }}%</span>
               </div>
-              <button class="btn btn-sm btn-outline-dark w-100 mt-2" @click="copyCode(coupon.code)">
+              <button class="btn btn-sm btn-outline-danger w-100 mt-2" @click="copyCode(coupon.code)">
                 Sao chép mã
               </button>
             </div>

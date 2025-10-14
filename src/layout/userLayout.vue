@@ -34,6 +34,20 @@ const handleLogout = () => {
   user.value = null
   router.push('/login')
 }
+const showBackToTop = ref(false)
+
+const handleScroll = () => {
+  showBackToTop.value = window.scrollY > 300
+}
+
+const scrollToTop = () => {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+onMounted(() => {
+  window.addEventListener('scroll', handleScroll)
+})
+
 </script>
 
 <template>
@@ -80,7 +94,7 @@ const handleLogout = () => {
                 <router-link to="/admin" class="btn btn-dark btn-sm fw-semibold">Admin Panel</router-link>
               </template>
 
-              <button @click="handleLogout" class="btn btn-outline-dark btn-sm">Logout</button>
+              <button @click="handleLogout" class="btn btn-outline-danger btn-sm">Đăng xuất</button>
             </template>
 
             <template v-else>
@@ -161,17 +175,44 @@ const handleLogout = () => {
       </div>
     </div>
 
-    <!-- Copyright -->
     <div class="footer-bottom text-center py-3 mt-4 border-top border-secondary">
       <p class="mb-0 small text-secondary">
         &copy; 2025 <b>Github</b> — HoangHieu21201/Vue
       </p>
     </div>
+    <button v-show="showBackToTop" class="back-to-top" @click="scrollToTop">
+      <i class="fa-solid fa-chevron-up"></i>
+    </button>
   </footer>
-
 </template>
 
 <style scoped>
+/* ===== BACK TO TOP ===== */
+.back-to-top {
+  position: fixed;
+  bottom: 25px;
+  right: 25px;
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  background-color: #000;
+  color: #fff;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+  z-index: 999;
+}
+
+.back-to-top:hover {
+  background-color: #444;
+  transform: translateY(-3px);
+}
+
 /* ===== BODY BASE ===== */
 body {
   background-color: #fff;

@@ -52,7 +52,7 @@
         <!-- Footer -->
         <footer class="admin-footer text-center py-3 mt-auto border-top">
             <p class="mb-0 small text-secondary">
-                &copy; 2025 <b>OutfitVN Admin</b> — All rights reserved.
+                &copy; 2025 <b>figurecollector Admin</b> — Frontend.
             </p>
         </footer>
     </div>
