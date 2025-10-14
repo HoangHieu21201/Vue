@@ -30,15 +30,13 @@ const placeOrder = async () => {
         customerName: customerName.value,
         customerAddress: customerAddress.value,
         customerPhone: customerPhone.value,
-        items: cart.value,
+        items: JSON.parse(JSON.stringify(cart.value)),
         total: total.value,
         status: 'Chờ xác nhận',
         createdAt: new Date().toISOString()
     };
 
     try {
-        console.log('Order placed:', order);
-        
         await fetch('http://localhost:3000/orders', {
             method: 'POST',
             headers: {
@@ -47,19 +45,19 @@ const placeOrder = async () => {
             body: JSON.stringify(order)
         });
 
-
         store.dispatch('cart/deleteAllCart');
         alert('Đặt hàng thành công!');
-        router.push('/shop'); 
+        router.push('/order-history');
     } catch (error) {
         console.error('Failed to place order:', error);
         alert('Đặt hàng thất bại, vui lòng thử lại.');
     }
 };
+
 </script>
 
 <template>
-    <div class="container my-5">
+   <div class="container my-5">
         <h2 class="fw-bold mb-4 text-center">Thanh toán</h2>
         <div class="row g-4">
             <div class="col-lg-7">
