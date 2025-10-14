@@ -4,12 +4,40 @@ import axios from 'axios'
 
 const category = ref([])
 const products = ref([])
+const coupons = ref([])
 
-const API = import.meta.env.VITE_URL_API || 'http://localhost:3000'
+const API = import.meta.env.VITE_URL_API || 'http://localhost:3000';
 onMounted(async () => {
   Loadulieu()
 })
 
+const fetchCoupons = async () => {
+  try {
+    const { data } = await axios.get(`${API}/coupons`);
+    coupons.value = data.filter(c => new Date(c.expiry_date) >= new Date());
+  } catch (error) {
+    console.error("Lỗi khi tải coupons:", error);
+  }
+};
+
+// Hàm mới để sao chép mã
+const copyToClipboard = async (text, couponId) => {
+  try {
+    await navigator.clipboard.writeText(text);
+
+    // Thay đổi trạng thái của coupon được sao chép
+    const coupon = coupons.value.find(c => c.id === couponId);
+    if (coupon) {
+      coupon.copied = true;
+      setTimeout(() => {
+        coupon.copied = false;
+      }, 2000); // Trở lại trạng thái cũ sau 2 giây
+    }
+  } catch (err) {
+    console.error('Không thể sao chép: ', err);
+    alert('Sao chép thất bại!');
+  }
+};
 const scrollContainer = ref(null)
 const scrollLeft = () => scrollContainer.value.scrollBy({ left: -350, behavior: 'smooth' })
 const scrollRight = () => scrollContainer.value.scrollBy({ left: 350, behavior: 'smooth' })
@@ -39,6 +67,7 @@ const readProduct = async () => {
 onMounted(() => {
   readCategory()
   readProduct()
+  fetchCoupons();
 })
 </script>
 
@@ -51,6 +80,28 @@ onMounted(() => {
         <h1 class="fw-bold display-4 mb-3">Figure Collector</h1>
         <p class="lead mb-4">Gundam, Figure, Gunpla and Figure custom</p>
         <button class="btn btn-light fw-semibold px-4 py-2">Buy Now</button>
+      </div>
+    </section>
+
+    <section class="container my-5" v-if="coupons.length > 0">
+      <div class="text-center mb-4">
+        <h2 class="fw-bold">✨ Mã Giảm Giá Hấp Dẫn ✨</h2>
+        <p class="text-muted">Nhanh tay sử dụng trước khi hết hạn!</p>
+      </div>
+      <div class="row g-4 justify-content-center">
+        <div v-for="coupon in coupons" :key="coupon.id" class="col-md-6 col-lg-4">
+          <div class="coupon-card">
+            <div class="coupon-details">
+              <h5 class="text-primary">Giảm {{ coupon.discount }}%</h5>
+              <p class="coupon-code">{{ coupon.code }}</p>
+              <small class="text-muted">Hết hạn: {{ new Date(coupon.expiry_date).toLocaleDateString('vi-VN') }}</small>
+            </div>
+            <button @click="copyToClipboard(coupon.code, coupon.id)" class="copy-btn">
+              <span v-if="!coupon.copied"><i class="far fa-copy"></i> Sao chép</span>
+              <span v-else><i class="fas fa-check"></i> Đã chép!</span>
+            </button>
+          </div>
+        </div>
       </div>
     </section>
 

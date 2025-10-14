@@ -21,6 +21,7 @@ import product from "../src/components/admin/product.vue";
 import readProduct from "../src/components/admin/readProduct.vue";
 import coupon from "../src/components/admin/coupon.vue";
 
+
 import NotFound from "../src/components/page/NotFound.vue";
 
 const routes = [
@@ -48,7 +49,8 @@ const routes = [
       { path: "categories", component: categories },
       { path: "product", component: product },
       { path: "readProduct/:id", component: readProduct },
-      { path: "coupon/:id", component: coupon },
+      { path: 'coupons', component: coupon
+      }
     ],
   },
   {
@@ -68,14 +70,14 @@ router.beforeEach((to, from, next) => {
 
   if (to.meta.requiresAdmin) {
     if (!loggedUser) {
-      next("/login"); 
+      next("/login");
     } else if (loggedUser.role !== "admin") {
-      next("/404"); 
+      next("/404");
     } else {
-      next(); 
+      next();
     }
   } else {
-    next(); 
+    next();
   }
 });
 

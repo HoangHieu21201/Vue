@@ -23,9 +23,9 @@
                             <i class="fas fa-box"></i> Sản phẩm
                         </router-link>
                     </li>
-                    <li>
-                        <router-link to="/admin/coupon" class="nav-link" active-class="active-link">
-                            🎟️ Mã giảm giá
+                    <li class="nav-item">
+                        <router-link to="/admin/coupons" class="nav-link text-white">
+                            <i class="fas fa-tags me-2"></i>Coupons
                         </router-link>
                     </li>
                 </ul>
@@ -40,6 +40,7 @@
             <!-- Main content -->
             <main class="flex-fill p-4 bg-white rounded-start shadow-sm">
                 <router-view />
+
             </main>
         </div>
 

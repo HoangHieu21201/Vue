@@ -6,6 +6,21 @@ const category = ref([])
 const products = ref([])
 const searchQuery = ref('')
 const sortOption = ref('Sắp xếp mặc định')
+const coupons = ref([])
+
+const readCoupons = async () => {
+  try {
+    const res = await axios.get('http://localhost:3000/coupons')
+    coupons.value = res.data
+  } catch (err) {
+    console.error('Error coupons:', err)
+  }
+}
+
+const copyCode = (code) => {
+  navigator.clipboard.writeText(code)
+  alert(`Đã sao chép mã: ${code}`)
+}
 
 const readCategory = async () => {
   try {
@@ -56,13 +71,13 @@ const sortProducts = () => {
 onMounted(() => {
   readCategory()
   readProduct()
+  readCoupons()
 })
 
 watch(sortOption, () => {
   sortProducts()
 })
 </script>
-
 
 <template>
   <div class="container-fluid my-5">
@@ -81,13 +96,34 @@ watch(sortOption, () => {
 
           <!-- Danh mục -->
           <h5 class="fw-bold mt-4 mb-3">Danh mục sản phẩm</h5>
-          <ul class="list-unstyled sidebar-menu">
+          <ul class="list-unstyled sidebar-menu mb-4">
             <li v-for="value in category" :key="value.id">
               <a href="#" class="text-decoration-none text-dark d-block py-2">
                 {{ value.nameCategory }}
               </a>
             </li>
           </ul>
+
+          <!-- Mã giảm giá -->
+          <h5 class="fw-bold mt-4 mb-3">
+            <i class="fa fa-ticket-alt me-2 text-secondary"></i> Mã giảm giá
+          </h5>
+          <div class="d-flex flex-column gap-2">
+            <div v-for="coupon in coupons" :key="coupon.id" class="coupon-card small">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <span class="fw-bold text-primary text-uppercase">{{ coupon.code }}</span>
+                  <div class="text-muted" style="font-size: 12px;">
+                    HSD: {{ new Date(coupon.expiry_date).toLocaleDateString('vi-VN') }}
+                  </div>
+                </div>
+                <span class="badge bg-danger ms-2">{{ coupon.discount }}%</span>
+              </div>
+              <button class="btn btn-sm btn-outline-dark w-100 mt-2" @click="copyCode(coupon.code)">
+                Sao chép mã
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -105,41 +141,44 @@ watch(sortOption, () => {
         </div>
 
         <div class="row g-4">
-            <div class="col-12 col-sm-6 col-md-4 col-lg-3" v-for="item in products" :key="item.id">
-              <router-link :to="`/productDetail/${item.id}`" class="text-decoration-none text-dark">
-                <div class="card border-0 shadow-sm h-100">
-                  <div class="position-relative">
-                    <img :src="item.image[0]" class="card-img-top" alt="product" />
-                    <span v-if="item.discount < item.price"
-                      class="badge bg-danger position-absolute top-0 start-0 m-2 px-2 py-1" style="font-size: 0.8rem;">
-                      Giảm giá!
-                    </span>
-                  </div>
-
-                  <div class="card-body text-center">
-                    <p class="text-secondary small mb-1">
-                      {{category.find(c => c.id === item.categoryId)?.nameCategory || 'Không có'}}
-                    </p>
-                    <h6 class="fw-semibold">{{ item.name }}</h6>
-
-                    <template v-if="item.discount < item.price">
-                      <p class="text-muted text-decoration-line-through small mb-1">
-                        {{ Number(item.price).toLocaleString('vi-VN') }} ₫
-                      </p>
-                      <p class="fw-bold mb-1 text-danger">
-                        {{ Number(item.discount).toLocaleString('vi-VN') }} ₫
-                      </p>
-                    </template>
-
-                    <template v-else>
-                      <p class="fw-bold text-danger mb-0">
-                        {{ Number(item.price).toLocaleString('vi-VN') }} ₫
-                      </p>
-                    </template>
-                  </div>
+          <div class="col-12 col-sm-6 col-md-4 col-lg-3" v-for="item in products" :key="item.id">
+            <router-link :to="`/productDetail/${item.id}`" class="text-decoration-none text-dark">
+              <div class="card border-0 shadow-sm h-100">
+                <div class="position-relative">
+                  <img :src="item.image[0]" class="card-img-top" alt="product" />
+                  <span
+                    v-if="item.discount < item.price"
+                    class="badge bg-danger position-absolute top-0 start-0 m-2 px-2 py-1"
+                    style="font-size: 0.8rem;"
+                  >
+                    Giảm giá!
+                  </span>
                 </div>
-              </router-link>
-            </div>
+
+                <div class="card-body text-center">
+                  <p class="text-secondary small mb-1">
+                    {{ category.find(c => c.id === item.categoryId)?.nameCategory || 'Không có' }}
+                  </p>
+                  <h6 class="fw-semibold">{{ item.name }}</h6>
+
+                  <template v-if="item.discount < item.price">
+                    <p class="text-muted text-decoration-line-through small mb-1">
+                      {{ Number(item.price).toLocaleString('vi-VN') }} ₫
+                    </p>
+                    <p class="fw-bold mb-1 text-danger">
+                      {{ Number(item.discount).toLocaleString('vi-VN') }} ₫
+                    </p>
+                  </template>
+
+                  <template v-else>
+                    <p class="fw-bold text-danger mb-0">
+                      {{ Number(item.price).toLocaleString('vi-VN') }} ₫
+                    </p>
+                  </template>
+                </div>
+              </div>
+            </router-link>
+          </div>
         </div>
 
         <p v-if="products.length === 0" class="text-center text-muted mt-4">
@@ -164,5 +203,31 @@ watch(sortOption, () => {
 
 .card:hover img {
   transform: scale(1.05);
+}
+
+/* ==== Coupon style ==== */
+.coupon-card {
+  background-color: #faf9f8;
+  border: 1px solid #dee2e6;
+  border-left: 4px solid #ce6b02;
+  border-radius: 8px;
+  padding: 10px 12px;
+  transition: all 0.2s ease;
+}
+
+.coupon-card:hover {
+  background-color: #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.coupon-card .badge {
+  font-size: 11px;
+  padding: 4px 6px;
+}
+
+.coupon-card .btn {
+  font-size: 13px;
+  padding: 4px 0;
 }
 </style>

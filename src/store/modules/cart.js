@@ -1,4 +1,4 @@
-// src/store/modules/cart.js
+
 import axios from 'axios';
 
 const state = {
@@ -53,7 +53,7 @@ const actions = {
     async addProductToCart({ dispatch }, product) {
         try {
             await axios.post('http://localhost:3000/cart', { ...product, quantity: 1 });
-            dispatch('fetchCart'); 
+            dispatch('fetchCart');
         } catch (err) {
             console.error('Lỗi khi thêm sản phẩm:', err);
         }
