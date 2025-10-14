@@ -139,6 +139,9 @@ watch(() => route.params.id, () => {
                         <p class="related-price mb-0">
                             {{ Number(item.discount).toLocaleString('vi-VN') }} ₫
                         </p>
+                        <router-link :to="`/product/${item.id}`" class="btn btn-sm btn-outline-dark mt-2">
+                            Xem chi tiết
+                        </router-link>
                     </div>
                 </div>
             </div>
@@ -148,7 +151,6 @@ watch(() => route.params.id, () => {
 
     <p v-else class="text-center text-muted mt-5">Loading Product...</p>
 </template>
-
 <style scoped>
 .main-img {
     height: 400px;

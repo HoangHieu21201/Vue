@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
 
+
 // layout
 import userLayout from "../src/layout/userLayout.vue";
 import adminLayout from "../src/layout/adminLayout.vue";
@@ -63,6 +64,10 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes,
+  scrollBehavior(to, from, savedPosition) {
+    // Luôn cuộn lên đầu trang
+    return { top: 0 };
+  },
 });
 
 router.beforeEach((to, from, next) => {
