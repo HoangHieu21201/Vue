@@ -14,6 +14,7 @@ import shop from "../src/components/page/shop.vue";
 import productDetail from "../src/components/page/productDetail.vue";
 import profile from "../src/components/page/profile.vue";
 import cart from "../src/components/page/cart.vue";
+import checkout from "../src/components/page/checkout.vue";
 
 // admin pages
 import categories from "../src/components/admin/categories.vue";
@@ -21,7 +22,7 @@ import CRUDUser from "../src/components/admin/CRUDUser.vue";
 import product from "../src/components/admin/product.vue";
 import readProduct from "../src/components/admin/readProduct.vue";
 import coupon from "../src/components/admin/coupon.vue";
-
+import ordersAdmin from "../src/components/admin/orders.vue";
 
 import NotFound from "../src/components/page/NotFound.vue";
 
@@ -38,6 +39,9 @@ const routes = [
       { path: "productDetail/:id", component: productDetail },
       { path: "profile", component: profile },
       { path: "cart", component: cart },
+      { path: "checkout", component: checkout },
+
+
     ],
   },
   {
@@ -50,8 +54,8 @@ const routes = [
       { path: "categories", component: categories },
       { path: "product", component: product },
       { path: "readProduct/:id", component: readProduct },
-      { path: 'coupons', component: coupon
-      }
+      { path: 'coupons', component: coupon },
+      { path: 'orders', component: ordersAdmin }
     ],
   },
   {
@@ -65,7 +69,6 @@ const router = createRouter({
   history: createWebHistory(),
   routes,
   scrollBehavior(to, from, savedPosition) {
-    // Luôn cuộn lên đầu trang
     return { top: 0 };
   },
 });

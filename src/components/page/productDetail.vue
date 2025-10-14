@@ -22,6 +22,7 @@ const readProductDetail = async () => {
     }
 }
 
+
 const readCategories = async () => {
     try {
         const res = await axios.get(`http://localhost:3000/categories`)
@@ -31,11 +32,9 @@ const readCategories = async () => {
     }
 }
 
-// Lấy danh sách sản phẩm cùng danh mục
 const readRelatedProducts = async (categoryId) => {
     try {
         const res = await axios.get(`http://localhost:3000/products?categoryId=${categoryId}`)
-        // Lọc bỏ chính sản phẩm hiện tại ra khỏi danh sách
         relatedProducts.value = res.data.filter(p => p.id !== product.value.id)
     } catch (err) {
         console.error('Lỗi khi tải sản phẩm liên quan:', err)
@@ -68,15 +67,18 @@ const addToCart = async () => {
     }
 }
 
+
 onMounted(() => {
-    readProductDetail()
     readCategories()
+    readProductDetail()
 })
 
-// Khi chuyển sản phẩm qua router (ví dụ bấm vào 1 sản phẩm liên quan)
-watch(() => route.params.id, () => {
-    readProductDetail()
-})
+watch(
+    () => route.params.id,
+    () => {
+        readProductDetail()
+    }
+)
 </script>
 
 <template>
@@ -131,7 +133,7 @@ watch(() => route.params.id, () => {
             <h4 class="fw-bold mb-3 border-bottom pb-2">Sản phẩm liên quan</h4>
             <div class="related-products">
                 <div v-for="item in relatedProducts" :key="item.id" class="related-card">
-                    <router-link :to="`/product/${item.id}`">
+                    <router-link :to="`/productDetail/${item.id}`">
                         <img :src="item.image[0]" class="related-img" alt="related" />
                     </router-link>
                     <div class="related-body">
@@ -139,7 +141,7 @@ watch(() => route.params.id, () => {
                         <p class="related-price mb-0">
                             {{ Number(item.discount).toLocaleString('vi-VN') }} ₫
                         </p>
-                        <router-link :to="`/product/${item.id}`" class="btn btn-sm btn-outline-dark mt-2">
+                        <router-link :to="`/productDetail/${item.id}`" class="btn btn-primary">
                             Xem chi tiết
                         </router-link>
                     </div>
@@ -151,6 +153,7 @@ watch(() => route.params.id, () => {
 
     <p v-else class="text-center text-muted mt-5">Loading Product...</p>
 </template>
+
 <style scoped>
 .main-img {
     height: 400px;

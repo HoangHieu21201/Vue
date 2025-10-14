@@ -4,9 +4,10 @@ import axios from 'axios'
 import Swal from 'sweetalert2'
 
 const users = ref([])
-const formUser = ref({ fullname: "", email: "", phone: "", address: "", role: "", password: "" })
+const formUser = ref({ fullname: "", email: "", phone: "", address: "", role: "", password: "", status: "active" })
 const isEditing = ref(false)
 const editingId = ref(null)
+const loggedInUser = ref(JSON.parse(localStorage.getItem('loggedInUser')))
 
 const readUser = async () => {
   try {
@@ -18,6 +19,11 @@ const readUser = async () => {
 }
 
 const removeUser = async (id) => {
+  if (id === loggedInUser.value?.id) {
+    Swal.fire('Thao tác bị từ chối', 'Bạn không thể tự xoá tài khoản của mình!', 'error')
+    return;
+  }
+
   Swal.fire({
     title: 'Bạn có chắc chắn muốn xoá?',
     text: `User có ID: ${id} sẽ bị xoá vĩnh viễn!`,
@@ -32,196 +38,177 @@ const removeUser = async (id) => {
       try {
         await axios.delete(`http://localhost:3000/user/${id}`)
         users.value = users.value.filter(u => u.id !== id)
-        Swal.fire({
-          icon: 'success',
-          title: 'Đã xoá!',
-          text: `User ${id} đã bị xoá khỏi hệ thống.`,
-          confirmButtonColor: '#000'
-        })
+        Swal.fire('Đã xoá!', 'Người dùng đã được xoá thành công.', 'success')
       } catch (err) {
-        console.error("err: ", err)
+        console.log(err)
+        Swal.fire('Lỗi!', 'Có lỗi xảy ra khi xoá người dùng.', 'error')
       }
     }
   })
 }
 
-const createUser = async () => {
-  if (!formUser.value.fullname || !formUser.value.email || !formUser.value.phone || !formUser.value.address || !formUser.value.role || !formUser.value.password) {
-    Swal.fire({
-      icon: 'warning',
-      title: 'Thiếu thông tin!',
-      text: 'Vui lòng nhập đầy đủ thông tin',
-      timer: 2000,
-      showConfirmButton: false
-    })
-    return
+const toggleUserStatus = async (user) => {
+  if (user.id === loggedInUser.value?.id) {
+    Swal.fire('Thao tác bị từ chối', 'Bạn không thể tự thay đổi trạng thái tài khoản của mình!', 'error');
+    return;
   }
+
+  const newStatus = user.status === 'active' ? 'disabled' : 'active';
+  const actionText = newStatus === 'disabled' ? 'vô hiệu hóa' : 'kích hoạt';
+
   try {
-    const res = await axios.post("http://localhost:3000/user", formUser.value)
-    users.value.push(res.data)
-    Swal.fire({
-      icon: 'success',
-      title: 'Tạo user thành công',
-      text: 'Bạn đã tạo user thành công',
-      timer: 1500,
-      showConfirmButton: false
-    })
+    await axios.patch(`http://localhost:3000/user/${user.id}`, { status: newStatus });
+    const userInArray = users.value.find(u => u.id === user.id);
+    if (userInArray) {
+      userInArray.status = newStatus;
+    }
+    Swal.fire('Thành công', `Đã ${actionText} tài khoản.`, 'success');
+  } catch (err) {
+    console.error(`Lỗi khi ${actionText} tài khoản:`, err);
+    Swal.fire('Lỗi', 'Có lỗi xảy ra, vui lòng thử lại.', 'error');
+  }
+};
+
+const submitForm = async () => {
+  try {
+    if (isEditing.value) {
+      // Khi chỉnh sửa, không gửi lại email
+      const { email, ...updateData } = formUser.value;
+      await axios.put(`http://localhost:3000/user/${editingId.value}`, updateData)
+      const index = users.value.findIndex(u => u.id === editingId.value)
+      if (index !== -1) {
+        users.value[index] = { ...users.value[index], ...updateData }
+      }
+      Swal.fire('Thành công', 'Cập nhật người dùng thành công!', 'success')
+    } else {
+      const res = await axios.post('http://localhost:3000/user', formUser.value)
+      users.value.push(res.data)
+      Swal.fire('Thành công', 'Thêm người dùng mới thành công!', 'success')
+    }
     resetForm()
   } catch (err) {
-    console.log("Add user error:", err)
+    console.log(err)
+    Swal.fire('Lỗi', 'Có lỗi xảy ra.', 'error')
   }
 }
 
-const editUser = (item) => {
-  formUser.value = { ...item }
+const editUser = (user) => {
   isEditing.value = true
-  editingId.value = item.id
-}
-
-const updateUser = async () => {
-  if (!formUser.value.fullname || !formUser.value.email || !formUser.value.phone || !formUser.value.address || !formUser.value.role) {
-    Swal.fire({
-      icon: 'warning',
-      title: 'Thiếu thông tin',
-      text: 'Vui lòng nhập đầy đủ thông tin',
-      timer: 2000,
-      showConfirmButton: false
-    })
-    return
-  }
-  try {
-    const res = await axios.put(`http://localhost:3000/user/${editingId.value}`, formUser.value)
-    const index = users.value.findIndex(p => p.id === editingId.value)
-    if (index !== -1) users.value[index] = res.data
-    Swal.fire({
-      icon: 'success',
-      title: 'Sửa user thành công',
-      text: 'Bạn đã sửa user thành công',
-      timer: 1500,
-      showConfirmButton: false
-    })
-    resetForm()
-  } catch (err) {
-    console.error("Update user error:", err)
-  }
+  editingId.value = user.id
+  formUser.value = { ...user }
 }
 
 const resetForm = () => {
-  formUser.value = { fullname: "", email: "", phone: "", address: "", role: "", password: "" }
   isEditing.value = false
   editingId.value = null
+  formUser.value = { fullname: "", email: "", phone: "", address: "", role: "", password: "", status: "active" }
 }
 
 onMounted(readUser)
 </script>
 
 <template>
-  <div class="container py-5">
-    <div class="card shadow-lg border-0 rounded-4 p-4">
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3 class="fw-bold text-dark mb-0">
-          <i class="fa fa-users me-2 text-primary"></i>Quản Lý Người Dùng
-        </h3>
-        <button class="btn btn-dark px-4" @click="resetForm">
-          <i class="fa fa-plus me-2"></i>Thêm người dùng
-        </button>
-      </div>
+  <div class="container-fluid p-4">
+    <h3 class="mb-4">Quản lý người dùng</h3>
 
-      <!-- Bảng danh sách -->
-      <div class="table-responsive">
-        <table class="table align-middle table-hover text-center">
-          <thead class="table-dark">
-            <tr>
-              <th>#</th>
-              <th>Họ tên</th>
-              <th>Email</th>
-              <th>SĐT</th>
-              <th>Địa chỉ</th>
-              <th>Quyền</th>
-              <th>Hành động</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="users.length" v-for="(items, index) in users" :key="index">
-              <td>{{ index + 1 }}</td>
-              <td>{{ items.fullname }}</td>
-              <td>{{ items.email }}</td>
-              <td>{{ items.phone }}</td>
-              <td>{{ items.address }}</td>
-              <td>
-                <span class="badge fs-6 px-3 py-2 rounded-pill" :class="{
-                  'bg-danger': items.role === 'admin',
-                  'bg-success': items.role === 'user'
-                }">
-                  {{ items.role }}
-                </span>
-              </td>
-              <td>
-                <button @click="editUser(items)" class="btn btn-outline-warning btn-sm me-2">
-                  <i class="fa fa-edit"></i>
-                </button>
-                <button @click="removeUser(items.id)" class="btn btn-outline-danger btn-sm">
-                  <i class="fa fa-trash"></i>
-                </button>
-              </td>
-            </tr>
-            <tr v-else>
-              <td colspan="7" class="text-center text-muted py-4">
-                <i class="fa fa-inbox fa-2x mb-2"></i><br />Chưa có người dùng nào
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Form thêm/sửa -->
-      <div class="border-top pt-4 mt-4">
-        <h5 class="fw-bold mb-3">
-          {{ isEditing ? 'Sửa thông tin người dùng' : 'Thêm người dùng mới' }}
-        </h5>
-        <form @submit.prevent="isEditing ? updateUser() : createUser()">
-          <div class="row g-3">
-            <div class="col-md-6">
-              <label class="form-label">Họ tên</label>
-              <input v-model="formUser.fullname" type="text" class="form-control" placeholder="Nhập họ tên" />
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Email</label>
-              <input v-model="formUser.email" type="email" class="form-control" placeholder="Nhập email" />
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Số điện thoại</label>
-              <input v-model="formUser.phone" type="text" class="form-control" placeholder="Nhập số điện thoại" />
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Địa chỉ</label>
-              <input v-model="formUser.address" type="text" class="form-control" placeholder="Nhập địa chỉ" />
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Mật khẩu</label>
-              <input v-model="formUser.password" type="password" class="form-control" placeholder="Nhập mật khẩu" />
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Quyền</label>
-              <select class="form-select" v-model="formUser.role" required>
-                <option disabled value="">-- Chọn quyền --</option>
-                <option value="user">User</option>
-                <option value="admin">Admin</option>
-              </select>
-            </div>
-          </div>
-          <div class="mt-4">
-            <button type="submit" class="btn btn-dark px-4 me-2">
-              {{ isEditing ? 'Lưu thay đổi' : 'Thêm người dùng' }}
-            </button>
-            <button type="button" class="btn btn-outline-secondary px-4" @click="resetForm">
-              Huỷ
-            </button>
-          </div>
-        </form>
+    <div class="row">
+      <div class="col">
+        <div class="table-responsive bg-white p-3 rounded shadow-sm">
+          <table class="table table-hover align-middle">
+            <thead class="table-dark">
+              <tr>
+                <th>ID</th>
+                <th>Tên người dùng</th>
+                <th>Email</th>
+                <th>Vai trò</th>
+                <th>Trạng thái</th>
+                <th class="text-center" style="width: 250px;">Hành động</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="user in users" :key="user.id">
+                <td>{{ user.id }}</td>
+                <td>{{ user.fullname }}</td>
+                <td>{{ user.email }}</td>
+                <td>
+                  <span :class="user.role === 'admin' ? 'badge bg-success' : 'badge bg-secondary'">
+                    {{ user.role }}
+                  </span>
+                </td>
+                <td>
+                  <span :class="user.status === 'active' ? 'badge bg-primary' : 'badge bg-danger'">
+                    {{ user.status === 'active' ? 'Hoạt động' : 'Vô hiệu hoá' }}
+                  </span>
+                </td>
+                <td class="text-center">
+                  <button class="btn btn-sm btn-primary me-2" @click="editUser(user)">Sửa</button>
+                  <button
+                    class="btn btn-sm me-2"
+                    :class="user.status === 'active' ? 'btn-warning' : 'btn-info'"
+                    @click="toggleUserStatus(user)"
+                    :disabled="user.id === loggedInUser?.id"
+                  >
+                    {{ user.status === 'active' ? 'Vô hiệu hoá' : 'Kích hoạt' }}
+                  </button>
+                  <button
+                    class="btn btn-sm btn-danger"
+                    @click="removeUser(user.id)"
+                    :disabled="user.id === loggedInUser?.id"
+                  >
+                    Xoá
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
-  </div>
+    
+          <div class="col">
+            <form @submit.prevent="submitForm" class="bg-white p-4 rounded shadow-sm">
+              <h5 class="mb-3 fw-bold">{{ isEditing ? 'Chỉnh sửa người dùng' : 'Thêm người dùng mới' }}</h5>
+              <div class="row g-3">
+                <div class="col-12">
+                  <label class="form-label">Họ và tên</label>
+                  <input v-model="formUser.fullname" type="text" class="form-control" placeholder="Nhập họ tên" required />
+                </div>
+                <div class="col-12">
+                  <label class="form-label">Email</label>
+                  <input v-model="formUser.email" type="email" class="form-control" placeholder="Nhập email" required :disabled="isEditing" />
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Số điện thoại</label>
+                  <input v-model="formUser.phone" type="text" class="form-control" placeholder="Nhập SĐT" />
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Địa chỉ</label>
+                  <input v-model="formUser.address" type="text" class="form-control" placeholder="Nhập địa chỉ" />
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Mật khẩu</label>
+                  <input v-model="formUser.password" type="password" class="form-control" placeholder="Để trống nếu không đổi" />
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Quyền</label>
+                  <select class="form-select" v-model="formUser.role" required>
+                    <option disabled value="">-- Chọn quyền --</option>
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+              </div>
+              <div class="mt-4">
+                <button type="submit" class="btn btn-dark px-4 me-2">
+                  {{ isEditing ? 'Lưu thay đổi' : 'Thêm người dùng' }}
+                </button>
+                <button type="button" class="btn btn-outline-secondary px-4" @click="resetForm">
+                  Huỷ
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
 </template>
 
 <style scoped>
@@ -231,18 +218,12 @@ h3 {
 
 .table th {
   font-weight: 600;
-  vertical-align: middle;
 }
 
-.card {
-  background: #fff;
-  border-radius: 16px;
-  transition: all 0.3s ease;
-}
-
-input:focus,
-select:focus {
-  border-color: #000 !important;
-  box-shadow: none;
+.btn:disabled,
+input:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+  background-color: #e9ecef;
 }
 </style>

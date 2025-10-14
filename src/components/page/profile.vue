@@ -15,22 +15,44 @@ const user = ref({
   password: '',
   image: ''
 })
+const orders = ref([]);
 
-onMounted(() => {
-  const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser'))
-  if (loggedInUser) {
-    user.value = { ...loggedInUser }
-  } else {
-    Swal.fire({
-      icon: 'error',
-      title: 'You are not logged in',
-      text: 'Please log in to view personal information!',
-      confirmButtonColor: '#000'
-    }).then(() => {
-      window.location.href = '/login'
-    })
+onMounted(async () => {
+  const loggedUser = JSON.parse(localStorage.getItem("loggedInUser"));
+  if (loggedUser) {
+    user.value = loggedUser;
+    // Fetch user's orders
+    try {
+      const response = await fetch(`http://localhost:3000/orders?userId=${loggedUser.id}`);
+      orders.value = await response.json();
+    } catch (error) {
+      console.error('Failed to fetch orders:', error);
+    }
   }
-})
+});
+
+const cancelOrder = async (orderId) => {
+  if (confirm('Bạn có chắc chắn muốn hủy đơn hàng này?')) {
+    try {
+      await fetch(`http://localhost:3000/orders/${orderId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'Đã hủy' })
+      });
+      const order = orders.value.find(o => o.id === orderId);
+      if (order) order.status = 'Đã hủy';
+    } catch (error) {
+      console.error('Failed to cancel order:', error);
+    }
+  }
+};
+
+const reOrder = (order) => {
+  // This functionality would require adding items back to the cart
+  // For simplicity, we'll just log it for now
+  console.log('Re-ordering:', order);
+  alert('Chức năng Mua lại đang được phát triển!');
+};
 
 const saveChanges = async () => {
   try {
@@ -129,6 +151,24 @@ const saveChanges = async () => {
             <i class="fa fa-times me-2"></i>Cancel
           </button>
         </div>
+        <h4 class="mt-5 mb-3">Lịch sử đơn hàng</h4>
+            <div v-if="orders.length === 0" class="text-muted">
+                Bạn chưa có đơn hàng nào.
+            </div>
+            <div v-else class="list-group">
+                <div v-for="order in orders" :key="order.id" class="list-group-item list-group-item-action flex-column align-items-start mb-3 border shadow-sm">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1">Đơn hàng #{{ order.id }}</h5>
+                        <small>{{ new Date(order.createdAt).toLocaleDateString('vi-VN') }}</small>
+                    </div>
+                    <p class="mb-1">Trạng thái: <span class="fw-semibold" :class="{'text-success': order.status === 'Đã giao', 'text-danger': order.status === 'Đã hủy'}">{{ order.status }}</span></p>
+                    <p class="mb-1">Tổng tiền: <span class="fw-bold text-danger">{{ order.total.toLocaleString('vi-VN') }} ₫</span></p>
+                    <div class="mt-2">
+                         <button @click="cancelOrder(order.id)" v-if="order.status === 'Chờ xác nhận'" class="btn btn-sm btn-outline-danger me-2">Hủy đơn</button>
+                         <button @click="reOrder(order)" class="btn btn-sm btn-outline-dark">Mua lại</button>
+                    </div>
+                </div>
+            </div>
       </div>
     </div>
   </div>

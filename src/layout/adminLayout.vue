@@ -28,6 +28,11 @@
                             <i class="fas fa-tags me-2"></i>Coupons
                         </router-link>
                     </li>
+                    <li class="nav-item">
+                        <RouterLink to="/admin/orders" class="nav-link">
+                            <i class="fas fa-receipt me-2"></i> Đơn hàng
+                        </RouterLink>
+                    </li>
                 </ul>
 
                 <div class="mt-auto text-center pt-4 border-top border-secondary">
