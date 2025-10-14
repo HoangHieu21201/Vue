@@ -1,13 +1,85 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import axios from 'axios'
+import { useStore } from 'vuex' // Giữ lại Vuex cho chức năng giỏ hàng
 
+const store = useStore()
 const category = ref([])
 const products = ref([])
 const searchQuery = ref('')
 const sortOption = ref('Sắp xếp mặc định')
 const coupons = ref([])
+const wishlistItems = ref([]); // State để lưu danh sách ID sản phẩm yêu thích
 
+// --- LOGIC GIỎ HÀNG (GIỮ NGUYÊN) ---
+const addToCart = (product) => {
+  store.dispatch('cart/addToCart', product);
+  alert('Đã thêm sản phẩm vào giỏ hàng!');
+};
+
+// --- LOGIC YÊU THÍCH (ĐÃ SỬA LẠI HOÀN TOÀN) ---
+const fetchWishlist = async () => {
+  try {
+    const res = await axios.get('http://localhost:3000/wishlist');
+    if (res.data.length > 0 && res.data[0].products) {
+      // Chỉ lưu mảng products vào wishlistItems
+      wishlistItems.value = res.data[0].products;
+    } else {
+      wishlistItems.value = [];
+    }
+  } catch (err) {
+    console.error('Lỗi khi tải danh sách yêu thích:', err);
+    wishlistItems.value = [];
+  }
+}
+
+const isInWishlist = (productId) => {
+  // Kiểm tra xem ID sản phẩm có tồn tại trong mảng wishlistItems không
+  return wishlistItems.value.some(item => item.id === productId);
+};
+
+const toggleWishlist = async (product) => {
+  try {
+    // Luôn lấy dữ liệu mới nhất từ server để tránh xung đột
+    const response = await axios.get('http://localhost:3000/wishlist');
+    let wishlist = response.data.length > 0 ? response.data[0] : { id: 1, products: [] };
+
+    const productIndex = wishlist.products.findIndex(p => p.id === product.id);
+
+    if (productIndex !== -1) {
+      // Nếu sản phẩm đã có -> Xóa khỏi mảng
+      wishlist.products.splice(productIndex, 1);
+      alert('Đã xóa khỏi danh sách yêu thích');
+    } else {
+      // Nếu sản phẩm chưa có -> Thêm vào mảng
+      wishlist.products.push({
+        id: product.id,
+        name: product.name,
+        image: product.image,
+        price: product.price,
+        discount: product.discount
+      });
+      alert('Đã thêm vào danh sách yêu thích');
+    }
+
+    // Cập nhật lại toàn bộ object wishlist lên server
+    if (response.data.length > 0) {
+      await axios.put('http://localhost:3000/wishlist/1', wishlist);
+    } else {
+      await axios.post('http://localhost:3000/wishlist', wishlist);
+    }
+
+    // Tải lại danh sách yêu thích để cập nhật giao diện (nút bấm)
+    await fetchWishlist();
+
+  } catch (error) {
+    console.error('Lỗi khi cập nhật danh sách yêu thích:', error);
+    alert('Có lỗi xảy ra, vui lòng thử lại.');
+  }
+};
+
+
+// --- CÁC HÀM KHÁC (GIỮ NGUYÊN) ---
 const readCoupons = async () => {
   try {
     const res = await axios.get('http://localhost:3000/coupons')
@@ -33,7 +105,11 @@ const readCategory = async () => {
 
 const readProduct = async () => {
   try {
-    const res = await axios.get('http://localhost:3000/products')
+    let url = 'http://localhost:3000/products'
+    if (searchQuery.value) {
+      url += `?name_like=${searchQuery.value}`
+    }
+    const res = await axios.get(url)
     products.value = res.data
     sortProducts()
   } catch (err) {
@@ -41,30 +117,28 @@ const readProduct = async () => {
   }
 }
 
+const searchProduct = () => {
+  readProduct()
+}
+
 const sortProducts = () => {
   let sorted = [...products.value]
-
   switch (sortOption.value) {
     case 'Từ A -> Z':
       sorted.sort((a, b) => a.name.localeCompare(b.name, 'vi', { sensitivity: 'base' }))
       break
-
     case 'Từ Z -> A':
       sorted.sort((a, b) => b.name.localeCompare(a.name, 'vi', { sensitivity: 'base' }))
       break
-
     case 'Giá tăng dần':
       sorted.sort((a, b) => (a.discount || a.price) - (b.discount || b.price))
       break
-
     case 'Giá giảm dần':
       sorted.sort((a, b) => (b.discount || b.price) - (a.discount || a.price))
       break
-
     default:
-      sorted.sort((a, b) => a.id - b.id)
+      // Giữ nguyên thứ tự ban đầu nếu không có lựa chọn sắp xếp
   }
-
   products.value = sorted
 }
 
@@ -72,6 +146,7 @@ onMounted(() => {
   readCategory()
   readProduct()
   readCoupons()
+  fetchWishlist() // Tải danh sách yêu thích khi component được tạo
 })
 
 watch(sortOption, () => {
@@ -82,10 +157,8 @@ watch(sortOption, () => {
 <template>
   <div class="container-fluid my-5">
     <div class="row">
-      <!-- Sidebar -->
       <div class="col-lg-3 mb-4">
         <div class="p-3 border rounded shadow-sm bg-white">
-          <!-- Tìm kiếm -->
           <h5 class="fw-bold mb-3">Tìm kiếm</h5>
           <form class="input-group mb-3" @submit.prevent>
             <input v-model="searchQuery" type="text" class="form-control" placeholder="Nhập tên sản phẩm..." />
@@ -94,7 +167,6 @@ watch(sortOption, () => {
             </button>
           </form>
 
-          <!-- Danh mục -->
           <h5 class="fw-bold mt-4 mb-3">Danh mục sản phẩm</h5>
           <ul class="list-unstyled sidebar-menu mb-4">
             <li v-for="value in category" :key="value.id">
@@ -104,7 +176,6 @@ watch(sortOption, () => {
             </li>
           </ul>
 
-          <!-- Mã giảm giá -->
           <h5 class="fw-bold mt-4 mb-3">
             <i class="fa fa-ticket-alt me-2 text-secondary"></i> Mã giảm giá
           </h5>
@@ -127,7 +198,6 @@ watch(sortOption, () => {
         </div>
       </div>
 
-      <!-- Sản phẩm -->
       <div class="col-lg-9">
         <div class="d-flex justify-content-between align-items-center mb-4">
           <p class="mb-0 text-muted">Hiển thị {{ products.length }} sản phẩm</p>
@@ -142,22 +212,19 @@ watch(sortOption, () => {
 
         <div class="row g-4">
           <div class="col-12 col-sm-6 col-md-4 col-lg-3" v-for="item in products" :key="item.id">
-            <router-link :to="`/productDetail/${item.id}`" class="text-decoration-none text-dark">
-              <div class="card border-0 shadow-sm h-100">
+            <div class="card border-0 shadow-sm h-100">
+              <router-link :to="`/productDetail/${item.id}`" class="text-decoration-none text-dark">
                 <div class="position-relative">
                   <img :src="item.image[0]" class="card-img-top" alt="product" />
-                  <span
-                    v-if="item.discount < item.price"
-                    class="badge bg-danger position-absolute top-0 start-0 m-2 px-2 py-1"
-                    style="font-size: 0.8rem;"
-                  >
+                  <span v-if="item.discount < item.price"
+                    class="badge bg-danger position-absolute top-0 start-0 m-2 px-2 py-1" style="font-size: 0.8rem;">
                     Giảm giá!
                   </span>
                 </div>
 
                 <div class="card-body text-center">
                   <p class="text-secondary small mb-1">
-                    {{ category.find(c => c.id === item.categoryId)?.nameCategory || 'Không có' }}
+                    {{category.find(c => c.id === item.categoryId)?.nameCategory || 'Không có'}}
                   </p>
                   <h6 class="fw-semibold">{{ item.name }}</h6>
 
@@ -176,8 +243,17 @@ watch(sortOption, () => {
                     </p>
                   </template>
                 </div>
+              </router-link>
+              <div class="card-footer bg-transparent border-0 d-flex justify-content-center gap-2 pb-3">
+                <button class="btn btn-outline-success px-4 py-2" @click="addToCart(item)">
+                  Mua<i class="fa fa-shopping-cart me-2"></i>
+                </button>
+                <button class="btn btn-outline-danger px-4 py-2" @click="toggleWishlist(item)"
+                  :class="{ 'btn-danger': isInWishlist(item.id) }">
+                  Yêu thích <i class="fa fa-heart me-2"></i>
+                </button>
               </div>
-            </router-link>
+            </div>
           </div>
         </div>
 
@@ -229,5 +305,11 @@ watch(sortOption, () => {
 .coupon-card .btn {
   font-size: 13px;
   padding: 4px 0;
+}
+
+.btn-danger {
+  color: #fff;
+  background-color: #dc3545;
+  border-color: #dc3545;
 }
 </style>

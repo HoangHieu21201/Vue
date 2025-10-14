@@ -80,7 +80,13 @@ onMounted(() => {
             <li class="nav-item">
               <router-link class="nav-link" to="/profile">Hồ sơ</router-link>
             </li>
+            <li>
+              <router-link to="/wishlist" class="nav-link">
+                Yêu thích
+              </router-link>
+            </li>
           </ul>
+
 
           <!-- Right actions -->
           <div class="d-flex align-items-center gap-2">

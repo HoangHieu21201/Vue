@@ -38,21 +38,19 @@ const cancelOrder = async (orderId) => {
     }
 };
 
-// 🆕 CẬP NHẬT LOGIC MUA LẠI
 const reOrder = async (oldOrder) => {
     if (!user.value) return alert('Vui lòng đăng nhập!');
 
     if (confirm('Bạn có muốn đặt lại đơn hàng này với thông tin và sản phẩm tương tự?')) {
-        // Tạo một đối tượng đơn hàng mới dựa trên đơn hàng cũ
         const newOrder = {
             userId: user.value.id,
             customerName: oldOrder.customerName,
             customerAddress: oldOrder.customerAddress,
             customerPhone: oldOrder.customerPhone,
-            items: oldOrder.items, // Giữ nguyên các sản phẩm
-            total: oldOrder.total, // Giữ nguyên tổng tiền
-            status: 'Chờ xác nhận', // Trạng thái chờ duyệt
-            createdAt: new Date().toISOString() // Ngày tạo mới
+            items: oldOrder.items,
+            total: oldOrder.total, 
+            status: 'Chờ xác nhận', 
+            createdAt: new Date().toISOString() 
         };
 
         try {
@@ -64,7 +62,6 @@ const reOrder = async (oldOrder) => {
 
             if (response.ok) {
                 const createdOrder = await response.json();
-                // Thêm đơn hàng mới vào đầu danh sách để người dùng thấy ngay
                 orders.value.unshift(createdOrder);
                 alert('Đã đặt lại đơn hàng thành công! Đơn hàng mới đang chờ được xác nhận.');
             } else {

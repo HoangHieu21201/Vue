@@ -13,7 +13,6 @@ const readProductDetail = async () => {
         const res = await axios.get(`http://localhost:3000/products/${route.params.id}`)
         product.value = res.data
 
-        // Khi đã có sản phẩm thì load thêm sản phẩm liên quan
         if (product.value?.categoryId) {
             await readRelatedProducts(product.value.categoryId)
         }
@@ -66,6 +65,47 @@ const addToCart = async () => {
         alert('Có lỗi xảy ra, vui lòng thử lại.');
     }
 }
+
+// *** LOGIC YÊU THÍCH ĐÃ ĐƯỢC SỬA LẠI ***
+const addToWishlist = async () => {
+    try {
+        // Luôn lấy dữ liệu wishlist mới nhất từ server
+        const response = await axios.get('http://localhost:3000/wishlist');
+        // Giả sử wishlist là một object duy nhất có id=1, chứa mảng products
+        let wishlist = response.data.length > 0 ? response.data[0] : { id: 1, products: [] };
+
+        // Kiểm tra xem sản phẩm đã tồn tại trong wishlist chưa
+        const isProductInWishlist = wishlist.products.some(p => p.id === product.value.id);
+
+        if (isProductInWishlist) {
+            alert('Sản phẩm này đã có trong danh sách yêu thích của bạn.');
+            return; // Dừng hàm nếu đã có
+        }
+
+        // Nếu chưa có, thêm sản phẩm mới vào mảng
+        wishlist.products.push({
+            id: product.value.id,
+            name: product.value.name,
+            image: product.value.image,
+            price: product.value.price,
+            discount: product.value.discount
+        });
+
+        // Gửi yêu cầu cập nhật lại toàn bộ object wishlist lên server
+        if (response.data.length > 0) {
+            // Nếu đã có wishlist, dùng PUT để cập nhật
+            await axios.put('http://localhost:3000/wishlist/1', wishlist);
+        } else {
+            // Nếu chưa có, dùng POST để tạo mới
+            await axios.post('http://localhost:3000/wishlist', wishlist);
+        }
+
+        alert('Đã thêm vào danh sách yêu thích');
+    } catch (error) {
+        console.error('Lỗi khi thêm vào danh sách yêu thích:', error);
+        alert('Có lỗi xảy ra, vui lòng thử lại.');
+    }
+};
 
 
 onMounted(() => {
@@ -121,8 +161,8 @@ watch(
                         <button @click="addToCart" class="btn btn-dark px-4 py-2">
                             <i class="fa fa-shopping-cart me-2"></i>Thêm vào giỏ hàng
                         </button>
-                        <button class="btn btn-outline-dark px-4 py-2">
-                            <i class="fa fa-heart me-2"></i>Favorite
+                        <button @click="addToWishlist" class="btn btn-outline-danger px-4 py-2">
+                            <i class="fa fa-heart me-2"></i>Yêu thích
                         </button>
                     </div>
                 </div>
