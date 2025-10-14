@@ -136,7 +136,7 @@ onMounted(() => {
 /* HERO */
 .hero {
   position: relative;
-  background: url("https://scontent.fsgn2-7.fna.fbcdn.net/v/t39.30808-6/557496633_4276803882603869_3670088248656144308_n.jpg?_nc_cat=100&ccb=1-7&_nc_sid=cc71e4&_nc_ohc=gAwhNF6vYmIQ7kNvwFESM7U&_nc_oc=Adn7BMRogvLxaW2WnksGno-Vg_pRhKDBl1pHInCHzG4tiFY_iX78EkexyjgN5xcabVM&_nc_zt=23&_nc_ht=scontent.fsgn2-7.fna&_nc_gid=dKAUTX5IpTKAZzzf5o6glw&oh=00_AfdJcoSITdcN-PhkWas8n9CwjBHNW8cJWdB8fGzCzPvwCA&oe=68ED8FAC") center/cover no-repeat;
+  background: url("../img/phoniex.jpg") center/cover no-repeat;
   height: 80vh;
 }
 

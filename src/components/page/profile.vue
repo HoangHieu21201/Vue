@@ -60,13 +60,9 @@ const saveChanges = async () => {
     <div class="card shadow-lg border-0 rounded-4 p-4 profile-card mx-auto" style="max-width: 800px;">
       <div class="d-flex align-items-center gap-4 flex-wrap">
         <div class="text-center flex-shrink-0">
-          <img :src="user.image || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'" alt="avatar"
+          <img :src="'https://wiztree.co.uk/wp-content/uploads/2024/05/user-icon-1024x1024-dtzturco.png'" alt="avatar"
             class="rounded-circle border shadow-sm" width="140" height="140" />
-          <div class="mt-3">
-            <button class="btn btn-outline-dark btn-sm px-3">
-              <i class="fa fa-camera me-2"></i>Choose image
-            </button>
-          </div>
+
         </div>
 
         <!-- Thông tin -->
@@ -75,7 +71,12 @@ const saveChanges = async () => {
           <p class="text-muted mb-1"><i class="fa fa-envelope me-2"></i>{{ user.email }}</p>
           <p class="text-muted mb-1"><i class="fa fa-phone me-2"></i>{{ user.phone }}</p>
           <p class="text-muted mb-1"><i class="fa fa-map-marker me-2"></i>{{ user.address }}</p>
-          <span class="badge bg-dark mt-2 text-uppercase">{{ user.role }}</span>
+          <p class="text-muted mb-1"><i class="fa fa-birthday-cake me-2"></i>{{ user.birthdate ? new
+            Date().getFullYear() - new Date(user.birthdate).getFullYear() + ' Tuổi' : '' }}</p>
+          <!-- hiện tuổi -->
+
+
+          <span class="badge bg-dark mt-2 text-uppercase" style="color: red;">{{ user.role }}</span>
         </div>
       </div>
 
@@ -95,12 +96,12 @@ const saveChanges = async () => {
           </div>
           <div class="col-md-6">
             <label class="form-label">Giới tính</label>
-              <select v-model="user.gender" class="form-select">
-                <option value="" disabled>Chọn giới tính</option>
-                <option value="male">Nam</option>
-                <option value="female">Nữ</option>
-                <option value="other">Khác</option>
-              </select>
+            <select v-model="user.gender" class="form-select">
+              <option value="" disabled>Chọn giới tính</option>
+              <option value="male">Nam</option>
+              <option value="female">Nữ</option>
+              <option value="other">Khác</option>
+            </select>
           </div>
           <div class="col-md-6">
             <label class="form-label">Số điện thoại</label>

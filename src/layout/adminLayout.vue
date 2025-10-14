@@ -4,7 +4,8 @@
             <!-- Sidebar -->
             <aside class="sidebar bg-dark text-white p-3">
                 <router-link class="navbar-brand d-flex align-items-center" to="/">
-                    <img src="../assets/logovuong.jpg" alt="" width="50" style="border-radius: 50px;"> <span>figurecollector</span>
+                    <img src="../assets/logovuong.jpg" alt="" width="50" style="border-radius: 50px;">
+                    <span>figurecollector</span>
                 </router-link>
                 <ul class="list-unstyled d-flex flex-column gap-2">
                     <li>
@@ -19,7 +20,12 @@
                     </li>
                     <li>
                         <router-link to="/admin/product" class="nav-link" active-class="active-link">
-                            📦 Sản phẩm
+                            <i class="fas fa-box"></i> Sản phẩm
+                        </router-link>
+                    </li>
+                    <li>
+                        <router-link to="/admin/coupon" class="nav-link" active-class="active-link">
+                            🎟️ Mã giảm giá
                         </router-link>
                     </li>
                 </ul>

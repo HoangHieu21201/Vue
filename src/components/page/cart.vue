@@ -10,22 +10,26 @@ const subtotal = computed(() => store.getters['cart/cartTotal']);
 const total = computed(() => store.getters['cart/cartTotal']);
 
 const decrease = (item) => {
-    store.dispatch('cart/decreaseProductQuantity', item.id);
+    store.dispatch('cart/decreaseQuantity', item.id);
 };
 
 const increase = (item) => {
-    store.dispatch('cart/increaseProductQuantity', item.id);
+    store.dispatch('cart/increaseQuantity', item.id);
 };
 
 const deleteCartItem = (itemId) => {
-    store.dispatch('cart/deleteProductFromCart', itemId);
+    if (confirm('Bạn có chắc chắn muốn xoá sản phẩm này không?')) {
+        store.dispatch('cart/deleteCart', itemId);
+    }
 };
 
 const deleteAllCart = () => {
-    store.dispatch('cart/clearCart');
+    if (confirm('Bạn có chắc chắn muốn xoá toàn bộ giỏ hàng không?')) {
+        store.dispatch('cart/deleteAllCart');
+    }
 };
+</script>
 
-</script> 
 
 <template>
     <div class="container my-5">
@@ -77,7 +81,7 @@ const deleteAllCart = () => {
                                         </div>
                                     </td>
                                     <td class="fw-semibold">{{ (item.discount * item.quantity).toLocaleString('vi-VN')
-                                        }} ₫</td>
+                                    }} ₫</td>
                                     <td>
                                         <button @click="deleteCartItem(item.id)" class="btn btn-sm btn-danger">
                                             <i class="fa fa-trash"></i>
