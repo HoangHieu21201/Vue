@@ -4,7 +4,7 @@
             <!-- Sidebar -->
             <aside class="sidebar bg-dark text-white p-3">
                 <router-link class="navbar-brand d-flex align-items-center" to="/">
-                    <img src="../assets/logovuong.jpg" alt="" width="50" style="border-radius: 50px;">
+                    <img src="../assets/logovuong.jpg" alt="" width="30" style="border-radius: 50px; margin-right: 10px; margin-bottom: 10px;">
                     <span>figurecollector</span>
                 </router-link>
                 <ul class="list-unstyled d-flex flex-column gap-2">
@@ -89,7 +89,7 @@
 }
 
 .nav-link:hover {
-    background-color: #222;
+    background-color: #878787;
     color: #fff;
 }
 

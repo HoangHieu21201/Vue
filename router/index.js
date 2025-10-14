@@ -15,6 +15,7 @@ import productDetail from "../src/components/page/productDetail.vue";
 import profile from "../src/components/page/profile.vue";
 import cart from "../src/components/page/cart.vue";
 import checkout from "../src/components/page/checkout.vue";
+import orderHistory from "../src/components/page/orderHistory.vue";
 
 // admin pages
 import categories from "../src/components/admin/categories.vue";
@@ -40,7 +41,7 @@ const routes = [
       { path: "profile", component: profile },
       { path: "cart", component: cart },
       { path: "checkout", component: checkout },
-
+      { path: "order-history", component: orderHistory },
 
     ],
   },

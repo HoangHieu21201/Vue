@@ -95,13 +95,10 @@ const saveChanges = async () => {
           <p class="text-muted mb-1"><i class="fa fa-map-marker me-2"></i>{{ user.address }}</p>
           <p class="text-muted mb-1"><i class="fa fa-birthday-cake me-2"></i>{{ user.birthdate ? new
             Date().getFullYear() - new Date(user.birthdate).getFullYear() + ' Tuổi' : '' }}</p>
-          <!-- hiện tuổi -->
-
-
           <span class="badge bg-dark mt-2 text-uppercase" style="color: red;">{{ user.role }}</span>
         </div>
       </div>
-
+      
       <hr class="my-4" />
 
       <!-- Form chỉnh sửa -->
@@ -150,26 +147,12 @@ const saveChanges = async () => {
           <button class="btn btn-outline-dark px-4 py-2">
             <i class="fa fa-times me-2"></i>Cancel
           </button>
+          <RouterLink to="/order-history" class="btn btn-dark fw-semibold">
+        <i class="fas fa-receipt me-2"></i> Xem lịch sử đơn hàng
+      </RouterLink>
         </div>
-        <h4 class="mt-5 mb-3">Lịch sử đơn hàng</h4>
-            <div v-if="orders.length === 0" class="text-muted">
-                Bạn chưa có đơn hàng nào.
-            </div>
-            <div v-else class="list-group">
-                <div v-for="order in orders" :key="order.id" class="list-group-item list-group-item-action flex-column align-items-start mb-3 border shadow-sm">
-                    <div class="d-flex w-100 justify-content-between">
-                        <h5 class="mb-1">Đơn hàng #{{ order.id }}</h5>
-                        <small>{{ new Date(order.createdAt).toLocaleDateString('vi-VN') }}</small>
-                    </div>
-                    <p class="mb-1">Trạng thái: <span class="fw-semibold" :class="{'text-success': order.status === 'Đã giao', 'text-danger': order.status === 'Đã hủy'}">{{ order.status }}</span></p>
-                    <p class="mb-1">Tổng tiền: <span class="fw-bold text-danger">{{ order.total.toLocaleString('vi-VN') }} ₫</span></p>
-                    <div class="mt-2">
-                         <button @click="cancelOrder(order.id)" v-if="order.status === 'Chờ xác nhận'" class="btn btn-sm btn-outline-danger me-2">Hủy đơn</button>
-                         <button @click="reOrder(order)" class="btn btn-sm btn-outline-dark">Mua lại</button>
-                    </div>
-                </div>
-            </div>
       </div>
+      
     </div>
   </div>
 </template>

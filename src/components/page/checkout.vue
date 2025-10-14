@@ -50,7 +50,7 @@ const placeOrder = async () => {
 
         store.dispatch('cart/deleteAllCart');
         alert('Đặt hàng thành công!');
-        router.push('/profile'); 
+        router.push('/shop'); 
     } catch (error) {
         console.error('Failed to place order:', error);
         alert('Đặt hàng thất bại, vui lòng thử lại.');
