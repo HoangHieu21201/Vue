@@ -11,11 +11,18 @@
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.1.0",
     "axios": "^1.12.2",
+    "body-parser": "^2.2.0",
     "bootstrap": "^5.3.8",
+    "cors": "^2.8.5",
+    "crypto": "^1.0.1",
+    "date-fns": "^4.1.0",
+    "express": "^5.1.0",
+    "qs": "^6.14.0",
     "sweetalert2": "^11.24.0",
     "vnpay": "^2.4.4",
     "vue": "^3.5.21",
     "vue-router": "^4.5.1",
+    "vue-toastification": "^2.0.0-rc.5",
     "vuex": "^4.0.2"
   },
   "devDependencies": {

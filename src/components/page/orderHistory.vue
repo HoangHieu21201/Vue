@@ -11,7 +11,6 @@ onMounted(async () => {
     if (loggedUser) {
         user.value = loggedUser;
         try {
-            // Sắp xếp đơn hàng theo ngày tạo mới nhất
             const response = await fetch(`http://localhost:3000/orders?userId=${loggedUser.id}&_sort=createdAt&_order=desc`);
             orders.value = await response.json();
         } catch (error) {
@@ -144,7 +143,6 @@ const reOrder = async (oldOrder) => {
 </template>
 
 <style scoped>
-/* Container */
 .order-history {
     max-width: 950px;
     margin: 40px auto;
@@ -325,7 +323,6 @@ const reOrder = async (oldOrder) => {
     background: #d4e3ff;
 }
 
-/* Responsive */
 @media (max-width: 600px) {
     .order-footer {
         flex-direction: column;
