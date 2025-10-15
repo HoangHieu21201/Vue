@@ -112,6 +112,7 @@ watch(() => route.params.id, () => {
     readProductDetail()
 })
 </script>
+
 <template>
     <div v-if="product" class="container my-5">
         <div class="row g-4">
@@ -152,8 +153,11 @@ watch(() => route.params.id, () => {
                         <button @click="addToCart" class="btn btn-dark px-4 py-2">
                             <i class="fa fa-shopping-cart me-2"></i>Thêm vào giỏ hàng
                         </button>
-                        <button @click="addToWishlist" class="btn btn-outline-danger px-4 py-2">
-                            <i class="fa fa-heart me-2"></i>Yêu thích
+
+                        <button @click="toggleWishlist" class="btn px-4 py-2"
+                            :class="isFavorited ? 'btn-danger' : 'btn-outline-danger'">
+                            <i class="fa me-2" :class="isFavorited ? 'fa-heart-crack' : 'fa-heart'"></i>
+                            {{ isFavorited ? 'Bỏ yêu thích' : 'Yêu thích' }}
                         </button>
                     </div>
                 </div>

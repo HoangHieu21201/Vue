@@ -80,7 +80,7 @@ onMounted(() => {
 
     <!-- CATEGORIES -->
     <section class="container my-5 position-relative">
-      <h2 class="text-center fw-bold mb-4">Featured Categories</h2>
+      <h2 class="text-center fw-bold mb-4">Danh Mục</h2>
 
       <!-- Scroll buttons -->
       <button class="scroll-btn left" @click="scrollLeft"><i class="fa fa-chevron-left"></i></button>
@@ -106,7 +106,7 @@ onMounted(() => {
 
     <!-- PRODUCTS -->
     <section class="container my-5 position-relative">
-      <h2 class="text-center fw-bold mb-4">Best Sellers</h2>
+      <h2 class="text-center fw-bold mb-4">Sản Phẩm</h2>
 
       <!-- Scroll buttons -->
       <button class="scroll-btn left" @click="scrollProductLeft">

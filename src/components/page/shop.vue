@@ -10,6 +10,7 @@ const searchQuery = ref('')
 const sortOption = ref('Sắp xếp mặc định')
 const coupons = ref([])
 const wishlistItems = ref([]);
+const selectedCategoryId = ref(null); // 1. Thêm biến để lưu ID danh mục được chọn
 
 const addToCart = (product) => {
   store.dispatch('cart/addToCart', product);
@@ -36,17 +37,17 @@ const toggleWishlist = async (product) => {
     const productIndex = wishlist.products.findIndex(p => p.id === product.id);
 
     if (productIndex !== -1) {
-        wishlist.products.splice(productIndex, 1);
-        alert('Đã xóa khỏi danh sách yêu thích');
+      wishlist.products.splice(productIndex, 1);
+      alert('Đã xóa khỏi danh sách yêu thích');
     } else {
-        wishlist.products.push({
-            id: product.id,
-            name: product.name,
-            image: product.image,
-            price: product.price,
-            discount: product.discount
-        });
-        alert('Đã thêm vào danh sách yêu thích');
+      wishlist.products.push({
+        id: product.id,
+        name: product.name,
+        image: product.image,
+        price: product.price,
+        discount: product.discount
+      });
+      alert('Đã thêm vào danh sách yêu thích');
     }
 
     await axios.put('http://localhost:3000/wishlist/1', wishlist);
@@ -80,18 +81,28 @@ const readCategory = async () => {
   }
 }
 
+// 2. Cập nhật hàm readProduct để có thể lọc theo cả danh mục và tìm kiếm
 const readProduct = async () => {
   try {
-    let url = 'http://localhost:3000/products'
-    if (searchQuery.value) {
-      url += `?name_like=${searchQuery.value}`
+    let url = new URL('http://localhost:3000/products');
+    if (selectedCategoryId.value) {
+      url.searchParams.append('categoryId', selectedCategoryId.value);
     }
-    const res = await axios.get(url)
-    products.value = res.data
-    sortProducts()
+    if (searchQuery.value) {
+      url.searchParams.append('name_like', searchQuery.value);
+    }
+    const res = await axios.get(url.toString());
+    products.value = res.data;
+    sortProducts();
   } catch (err) {
-    console.error('Error product:', err)
+    console.error('Error product:', err);
   }
+}
+
+// 3. Thêm hàm mới để xử lý việc click vào danh mục
+const filterByCategory = (categoryId) => {
+  selectedCategoryId.value = categoryId;
+  readProduct(); // Gọi lại hàm đọc sản phẩm với bộ lọc mới
 }
 
 const searchProduct = () => {
@@ -129,6 +140,7 @@ watch(sortOption, () => {
   sortProducts()
 })
 </script>
+
 <template>
   <div class="container-fluid my-5">
     <div class="row">
@@ -144,8 +156,16 @@ watch(sortOption, () => {
 
           <h5 class="fw-bold mt-4 mb-3">Danh mục sản phẩm</h5>
           <ul class="list-unstyled sidebar-menu mb-4">
+            <li>
+              <a href="#" @click.prevent="filterByCategory(null)" class="text-decoration-none text-dark d-block py-2"
+                :class="{ 'fw-bold': selectedCategoryId === null }">
+                Tất cả sản phẩm
+              </a>
+            </li>
             <li v-for="value in category" :key="value.id">
-              <a href="#" class="text-decoration-none text-dark d-block py-2">
+              <a href="#" @click.prevent="filterByCategory(value.id)"
+                class="text-decoration-none text-dark d-block py-2"
+                :class="{ 'fw-bold': selectedCategoryId === value.id }">
                 {{ value.nameCategory }}
               </a>
             </li>
@@ -175,7 +195,8 @@ watch(sortOption, () => {
 
       <div class="col-lg-9">
         <div class="d-flex justify-content-between align-items-center mb-4">
-          <p class="mb-0 text-muted">Hiển thị {{ products.length }} sản phẩm</p>
+          <!-- <p class="mb-0 text-muted">Hiển thị {{ products.length }} sản phẩm</p> -->
+          <h3>Sản phẩm</h3>
           <select v-model="sortOption" class="form-select w-auto">
             <option selected>Sắp xếp mặc định</option>
             <option>Từ A -> Z</option>
@@ -220,13 +241,16 @@ watch(sortOption, () => {
                 </div>
               </router-link>
               <div class="card-footer bg-transparent border-0 d-flex justify-content-center gap-2 pb-3">
-                <button class="btn btn-outline-success px-4 py-2" @click="addToCart(item)">
-                  Mua<i class="fa fa-shopping-cart me-2"></i>
-                </button>
-                <button class="btn btn-outline-danger px-4 py-2" @click="toggleWishlist(item)"
-                  :class="{ 'btn-danger': isInWishlist(item.id) }">
-                  Yêu thích <i class="fa fa-heart me-2"></i>
-                </button>
+                <div class="card-footer bg-transparent border-0 d-flex justify-content-center gap-2 pb-3">
+                  <button class="btn btn-outline-success px-4 py-2" @click="addToCart(item)">
+                    Mua<i class="fa fa-shopping-cart"></i>
+                  </button>
+                  <button class="btn px-4 py-2" @click="toggleWishlist(item)"
+                    :class="isInWishlist(item.id) ? 'btn-danger' : 'btn-outline-danger'">
+                    <i class="fa me-2" :class="isInWishlist(item.id) ? 'fa-heart-crack' : 'fa-heart'"></i>
+                    {{ isInWishlist(item.id) ? 'Bỏ yêu thích' : 'Yêu thích' }}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -241,27 +265,138 @@ watch(sortOption, () => {
 </template>
 
 <style scoped>
+/* === Sidebar Menu === */
+.sidebar-menu li a.fw-bold {
+  color: #ce6b02 !important;
+}
 .sidebar-menu li a:hover {
   color: #000;
   font-weight: 500;
 }
 
+/* === Product Card Styling === */
+.card {
+  border: none;
+  border-radius: 14px;
+  overflow: hidden;
+  transition: all 0.25s ease;
+  background-color: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+
+.card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
+}
+
+/* === Product Image === */
 .card img {
-  height: 260px;
+  height: 250px;
+  width: 100%;
   object-fit: cover;
-  transition: 0.3s ease;
+  border-bottom: 1px solid #f1f1f1;
+  transition: transform 0.3s ease;
 }
 
 .card:hover img {
-  transform: scale(1.05);
+  transform: scale(1.06);
 }
 
-/* ==== Coupon style ==== */
+/* === Card Body === */
+.card-body {
+  padding: 12px 10px 4px;
+}
+
+.card-body h6 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  min-height: 40px;
+  color: #333;
+}
+
+.card-body p {
+  margin: 0;
+}
+
+.card-body .text-secondary {
+  font-size: 13px;
+}
+
+.card-body .fw-bold {
+  font-size: 15px;
+}
+
+/* === Price Display === */
+.text-decoration-line-through {
+  font-size: 13px;
+  color: #999;
+}
+.fw-bold.text-danger {
+  font-size: 16px;
+}
+
+/* === Buttons Area === */
+.card-footer {
+  background-color: transparent;
+  border: none;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding-top: 0;
+  padding-bottom: 14px;
+}
+
+/* === Buttons === */
+.btn {
+  font-size: 13px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.btn-outline-success {
+  color: #28a745;
+  border-color: #28a745;
+}
+
+.btn-outline-success:hover {
+  background-color: #28a745;
+  color: #fff;
+}
+
+.btn-outline-danger {
+  color: #dc3545;
+  border-color: #dc3545;
+}
+
+.btn-outline-danger:hover {
+  background-color: #dc3545;
+  color: #fff;
+}
+
+.btn-danger {
+  background-color: #dc3545;
+  color: #fff;
+  border: 1px solid #dc3545;
+}
+
+.btn-danger:hover {
+  background-color: #b32d39;
+}
+
+/* === Discount Badge === */
+.badge.bg-danger {
+  font-size: 12px !important;
+  padding: 4px 8px !important;
+  border-radius: 6px !important;
+}
+
+/* === Coupon Card (giữ nguyên, chỉ nhẹ hơn) === */
 .coupon-card {
   background-color: #faf9f8;
   border: 1px solid #dee2e6;
   border-left: 4px solid #ce6b02;
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 10px 12px;
   transition: all 0.2s ease;
 }
@@ -280,11 +415,5 @@ watch(sortOption, () => {
 .coupon-card .btn {
   font-size: 13px;
   padding: 4px 0;
-}
-
-.btn-danger {
-  color: #fff;
-  background-color: #dc3545;
-  border-color: #dc3545;
 }
 </style>
