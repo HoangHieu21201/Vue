@@ -1,16 +1,13 @@
-
 import axios from 'axios';
 
 const state = {
     cart: []
 };
 
-
 const mutations = {
     SET_CART(state, cartData) {
         state.cart = cartData;
     },
-
     ADD_TO_CART(state, product) {
         const productInCart = state.cart.find(item => item.id === product.id);
         if (productInCart) {
@@ -40,7 +37,6 @@ const mutations = {
 };
 
 const actions = {
-    // Tải giỏ hàng từ API
     async fetchCart({ commit }) {
         try {
             const { data } = await axios.get('http://localhost:3000/cart');
@@ -62,28 +58,32 @@ const actions = {
     async deleteCart({ commit }, productId) {
         try {
             await axios.delete(`http://localhost:3000/cart/${productId}`);
-            commit('DELETE_CART', productId); // Chỉ commit sau khi API thành công
+            commit('DELETE_CART', productId);
         } catch (err) {
             console.error('Lỗi khi xoá sản phẩm:', err);
         }
     },
 
-    // [SỬA] Xóa toàn bộ giỏ hàng
+    // Xóa toàn bộ giỏ hàng
     async deleteAllCart({ commit, state }) {
+        // Create an array of delete request promises
+        const deletePromises = state.cart.map(item =>
+            axios.delete(`http://localhost:3000/cart/${item.id}`)
+        );
+
         try {
-            // Tạo một mảng các promise xóa cho mỗi sản phẩm
-            const deletePromises = state.cart.map(item =>
-                axios.delete(`http://localhost:3000/cart/${item.id}`)
-            );
-            // Chờ cho tất cả các yêu cầu xóa hoàn tất
-            await Promise.all(deletePromises);
+            // Wait for all delete requests to settle (either succeed or fail)
+            await Promise.allSettled(deletePromises);
+        } catch (error) {
+            // This catch block might not be necessary with Promise.allSettled,
+            // but it's good practice to have it.
+            console.error('Lỗi khi thực hiện các yêu cầu xoá giỏ hàng:', error);
+        } finally {
+            // **Important:** Always clear the local cart, regardless of server response.
             commit('DELETE_ALL_CART');
-        } catch (err) {
-            console.error('Lỗi khi xoá toàn bộ giỏ hàng:', err);
         }
     },
 
-    // [SỬA] Giảm số lượng
     async decreaseQuantity({ commit, state }, productId) {
         const item = state.cart.find(p => p.id === productId);
         if (item && item.quantity > 1) {
@@ -96,7 +96,6 @@ const actions = {
         }
     },
 
-    // [SỬA] Tăng số lượng
     async increaseQuantity({ commit, state }, productId) {
         const item = state.cart.find(p => p.id === productId);
         if (item) {
@@ -109,7 +108,6 @@ const actions = {
         }
     }
 };
-
 
 const getters = {
     cartItems: state => state.cart,
