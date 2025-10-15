@@ -7,37 +7,11 @@ const products = ref([])
 const coupons = ref([])
 
 const API = import.meta.env.VITE_URL_API || 'http://localhost:3000';
-onMounted(async () => {
-  Loadulieu()
-})
+// onMounted(async () => {
+//   Loadulieu()
+// })
 
-const fetchCoupons = async () => {
-  try {
-    const { data } = await axios.get(`${API}/coupons`);
-    coupons.value = data.filter(c => new Date(c.expiry_date) >= new Date());
-  } catch (error) {
-    console.error("Lỗi khi tải coupons:", error);
-  }
-};
 
-// Hàm mới để sao chép mã
-const copyToClipboard = async (text, couponId) => {
-  try {
-    await navigator.clipboard.writeText(text);
-
-    // Thay đổi trạng thái của coupon được sao chép
-    const coupon = coupons.value.find(c => c.id === couponId);
-    if (coupon) {
-      coupon.copied = true;
-      setTimeout(() => {
-        coupon.copied = false;
-      }, 2000); // Trở lại trạng thái cũ sau 2 giây
-    }
-  } catch (err) {
-    console.error('Không thể sao chép: ', err);
-    alert('Sao chép thất bại!');
-  }
-};
 const scrollContainer = ref(null)
 const scrollLeft = () => scrollContainer.value.scrollBy({ left: -350, behavior: 'smooth' })
 const scrollRight = () => scrollContainer.value.scrollBy({ left: 350, behavior: 'smooth' })
@@ -67,7 +41,6 @@ const readProduct = async () => {
 onMounted(() => {
   readCategory()
   readProduct()
-  fetchCoupons();
 })
 </script>
 

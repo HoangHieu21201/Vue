@@ -7,20 +7,59 @@ const product = ref(null)
 const route = useRoute()
 const categories = ref([])
 const relatedProducts = ref([])
+const isFavorited = ref(false);
+
+const checkFavoriteStatus = async () => {
+    if (!product.value) return;
+    try {
+        const response = await axios.get('http://localhost:3000/wishlist/1');
+        isFavorited.value = response.data.products.some(p => p.id === product.value.id);
+    } catch (error) {
+        console.error("Lỗi khi kiểm tra trạng thái yêu thích:", error);
+        isFavorited.value = false;
+    }
+};
+
+const toggleWishlist = async () => {
+    if (!product.value) return;
+    try {
+        const { data: wishlist } = await axios.get('http://localhost:3000/wishlist/1');
+        const productIndex = wishlist.products.findIndex(p => p.id === product.value.id);
+
+        if (productIndex !== -1) {
+            wishlist.products.splice(productIndex, 1);
+            alert('Đã xóa khỏi danh sách yêu thích');
+        } else {
+            wishlist.products.push({
+                id: product.value.id,
+                name: product.value.name,
+                image: product.value.image,
+                price: product.value.price,
+                discount: product.value.discount
+            });
+            alert('Đã thêm vào danh sách yêu thích');
+        }
+
+        await axios.put('http://localhost:3000/wishlist/1', wishlist);
+        await checkFavoriteStatus(); // Cập nhật lại trạng thái nút bấm
+    } catch (error) {
+        console.error('Lỗi khi cập nhật danh sách yêu thích:', error);
+        alert('Có lỗi xảy ra, vui lòng thử lại.');
+    }
+};
 
 const readProductDetail = async () => {
     try {
         const res = await axios.get(`http://localhost:3000/products/${route.params.id}`)
         product.value = res.data
-
         if (product.value?.categoryId) {
             await readRelatedProducts(product.value.categoryId)
         }
+        await checkFavoriteStatus();
     } catch (err) {
         console.error('Err: ', err)
     }
 }
-
 
 const readCategories = async () => {
     try {
@@ -42,11 +81,9 @@ const readRelatedProducts = async (categoryId) => {
 
 const addToCart = async () => {
     if (!product.value) return;
-
     try {
         const { data: existingItems } = await axios.get(`http://localhost:3000/cart?id=${product.value.id}`);
         const existingItem = existingItems[0];
-
         if (existingItem) {
             await axios.patch(`http://localhost:3000/cart/${existingItem.id}`, {
                 quantity: existingItem.quantity + 1
@@ -66,61 +103,15 @@ const addToCart = async () => {
     }
 }
 
-// *** LOGIC YÊU THÍCH ĐÃ ĐƯỢC SỬA LẠI ***
-const addToWishlist = async () => {
-    try {
-        // Luôn lấy dữ liệu wishlist mới nhất từ server
-        const response = await axios.get('http://localhost:3000/wishlist');
-        // Giả sử wishlist là một object duy nhất có id=1, chứa mảng products
-        let wishlist = response.data.length > 0 ? response.data[0] : { id: 1, products: [] };
-
-        // Kiểm tra xem sản phẩm đã tồn tại trong wishlist chưa
-        const isProductInWishlist = wishlist.products.some(p => p.id === product.value.id);
-
-        if (isProductInWishlist) {
-            alert('Sản phẩm này đã có trong danh sách yêu thích của bạn.');
-            return; // Dừng hàm nếu đã có
-        }
-
-        // Nếu chưa có, thêm sản phẩm mới vào mảng
-        wishlist.products.push({
-            id: product.value.id,
-            name: product.value.name,
-            image: product.value.image,
-            price: product.value.price,
-            discount: product.value.discount
-        });
-
-        // Gửi yêu cầu cập nhật lại toàn bộ object wishlist lên server
-        if (response.data.length > 0) {
-            // Nếu đã có wishlist, dùng PUT để cập nhật
-            await axios.put('http://localhost:3000/wishlist/1', wishlist);
-        } else {
-            // Nếu chưa có, dùng POST để tạo mới
-            await axios.post('http://localhost:3000/wishlist', wishlist);
-        }
-
-        alert('Đã thêm vào danh sách yêu thích');
-    } catch (error) {
-        console.error('Lỗi khi thêm vào danh sách yêu thích:', error);
-        alert('Có lỗi xảy ra, vui lòng thử lại.');
-    }
-};
-
-
 onMounted(() => {
     readCategories()
     readProductDetail()
 })
 
-watch(
-    () => route.params.id,
-    () => {
-        readProductDetail()
-    }
-)
+watch(() => route.params.id, () => {
+    readProductDetail()
+})
 </script>
-
 <template>
     <div v-if="product" class="container my-5">
         <div class="row g-4">

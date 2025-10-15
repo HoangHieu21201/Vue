@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import axios from 'axios'
-import { useStore } from 'vuex' // Giữ lại Vuex cho chức năng giỏ hàng
+import { useStore } from 'vuex'
 
 const store = useStore()
 const category = ref([])
@@ -9,24 +9,17 @@ const products = ref([])
 const searchQuery = ref('')
 const sortOption = ref('Sắp xếp mặc định')
 const coupons = ref([])
-const wishlistItems = ref([]); // State để lưu danh sách ID sản phẩm yêu thích
+const wishlistItems = ref([]);
 
-// --- LOGIC GIỎ HÀNG (GIỮ NGUYÊN) ---
 const addToCart = (product) => {
   store.dispatch('cart/addToCart', product);
   alert('Đã thêm sản phẩm vào giỏ hàng!');
 };
 
-// --- LOGIC YÊU THÍCH (ĐÃ SỬA LẠI HOÀN TOÀN) ---
 const fetchWishlist = async () => {
   try {
-    const res = await axios.get('http://localhost:3000/wishlist');
-    if (res.data.length > 0 && res.data[0].products) {
-      // Chỉ lưu mảng products vào wishlistItems
-      wishlistItems.value = res.data[0].products;
-    } else {
-      wishlistItems.value = [];
-    }
+    const res = await axios.get('http://localhost:3000/wishlist/1');
+    wishlistItems.value = res.data.products;
   } catch (err) {
     console.error('Lỗi khi tải danh sách yêu thích:', err);
     wishlistItems.value = [];
@@ -34,52 +27,36 @@ const fetchWishlist = async () => {
 }
 
 const isInWishlist = (productId) => {
-  // Kiểm tra xem ID sản phẩm có tồn tại trong mảng wishlistItems không
   return wishlistItems.value.some(item => item.id === productId);
 };
 
 const toggleWishlist = async (product) => {
   try {
-    // Luôn lấy dữ liệu mới nhất từ server để tránh xung đột
-    const response = await axios.get('http://localhost:3000/wishlist');
-    let wishlist = response.data.length > 0 ? response.data[0] : { id: 1, products: [] };
-
+    const { data: wishlist } = await axios.get('http://localhost:3000/wishlist/1');
     const productIndex = wishlist.products.findIndex(p => p.id === product.id);
 
     if (productIndex !== -1) {
-      // Nếu sản phẩm đã có -> Xóa khỏi mảng
-      wishlist.products.splice(productIndex, 1);
-      alert('Đã xóa khỏi danh sách yêu thích');
+        wishlist.products.splice(productIndex, 1);
+        alert('Đã xóa khỏi danh sách yêu thích');
     } else {
-      // Nếu sản phẩm chưa có -> Thêm vào mảng
-      wishlist.products.push({
-        id: product.id,
-        name: product.name,
-        image: product.image,
-        price: product.price,
-        discount: product.discount
-      });
-      alert('Đã thêm vào danh sách yêu thích');
+        wishlist.products.push({
+            id: product.id,
+            name: product.name,
+            image: product.image,
+            price: product.price,
+            discount: product.discount
+        });
+        alert('Đã thêm vào danh sách yêu thích');
     }
 
-    // Cập nhật lại toàn bộ object wishlist lên server
-    if (response.data.length > 0) {
-      await axios.put('http://localhost:3000/wishlist/1', wishlist);
-    } else {
-      await axios.post('http://localhost:3000/wishlist', wishlist);
-    }
-
-    // Tải lại danh sách yêu thích để cập nhật giao diện (nút bấm)
+    await axios.put('http://localhost:3000/wishlist/1', wishlist);
     await fetchWishlist();
-
   } catch (error) {
     console.error('Lỗi khi cập nhật danh sách yêu thích:', error);
     alert('Có lỗi xảy ra, vui lòng thử lại.');
   }
 };
 
-
-// --- CÁC HÀM KHÁC (GIỮ NGUYÊN) ---
 const readCoupons = async () => {
   try {
     const res = await axios.get('http://localhost:3000/coupons')
@@ -137,7 +114,6 @@ const sortProducts = () => {
       sorted.sort((a, b) => (b.discount || b.price) - (a.discount || a.price))
       break
     default:
-      // Giữ nguyên thứ tự ban đầu nếu không có lựa chọn sắp xếp
   }
   products.value = sorted
 }
@@ -146,14 +122,13 @@ onMounted(() => {
   readCategory()
   readProduct()
   readCoupons()
-  fetchWishlist() // Tải danh sách yêu thích khi component được tạo
+  fetchWishlist()
 })
 
 watch(sortOption, () => {
   sortProducts()
 })
 </script>
-
 <template>
   <div class="container-fluid my-5">
     <div class="row">
