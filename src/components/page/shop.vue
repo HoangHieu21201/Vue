@@ -2,61 +2,98 @@
 import { ref, onMounted, watch } from 'vue'
 import axios from 'axios'
 import { useStore } from 'vuex'
+// 1. Thêm useRouter để điều hướng
+import { useRouter } from 'vue-router'
 
 const store = useStore()
+const router = useRouter() // Khởi tạo router
 const category = ref([])
 const products = ref([])
 const searchQuery = ref('')
 const sortOption = ref('Sắp xếp mặc định')
 const coupons = ref([])
 const wishlistItems = ref([]);
-const selectedCategoryId = ref(null); // 1. Thêm biến để lưu ID danh mục được chọn
+const selectedCategoryId = ref(null);
 
 const addToCart = (product) => {
   store.dispatch('cart/addToCart', product);
   alert('Đã thêm sản phẩm vào giỏ hàng!');
 };
 
+// === BẮT ĐẦU PHẦN CODE CŨ ĐƯỢC THAY THẾ ===
+
+// Hàm tiện ích để lấy thông tin người dùng
+const getLoggedInUser = () => {
+    const user = localStorage.getItem('loggedInUser');
+    return user ? JSON.parse(user) : null;
+};
+
+// Cập nhật fetchWishlist để lấy theo userId
 const fetchWishlist = async () => {
+  const user = getLoggedInUser();
+  if (!user) {
+    wishlistItems.value = []; // Nếu chưa đăng nhập, danh sách yêu thích rỗng
+    return;
+  }
   try {
-    const res = await axios.get('http://localhost:3000/wishlist/1');
-    wishlistItems.value = res.data.products;
+    const { data: userWishlists } = await axios.get(`http://localhost:3000/wishlist?userId=${user.id}`);
+    if (userWishlists.length > 0) {
+      wishlistItems.value = userWishlists[0].products;
+    } else {
+        wishlistItems.value = [];
+    }
   } catch (err) {
     console.error('Lỗi khi tải danh sách yêu thích:', err);
     wishlistItems.value = [];
   }
 }
 
+// Hàm isInWishlist giữ nguyên logic, nhưng giờ sẽ hoạt động với dữ liệu đúng
 const isInWishlist = (productId) => {
   return wishlistItems.value.some(item => item.id === productId);
 };
 
 const toggleWishlist = async (product) => {
-  try {
-    const { data: wishlist } = await axios.get('http://localhost:3000/wishlist/1');
-    const productIndex = wishlist.products.findIndex(p => p.id === product.id);
-
-    if (productIndex !== -1) {
-      wishlist.products.splice(productIndex, 1);
-      alert('Đã xóa khỏi danh sách yêu thích');
-    } else {
-      wishlist.products.push({
-        id: product.id,
-        name: product.name,
-        image: product.image,
-        price: product.price,
-        discount: product.discount
-      });
-      alert('Đã thêm vào danh sách yêu thích');
+    const user = getLoggedInUser();
+    if (!user) {
+        alert('Bạn cần đăng nhập để sử dụng chức năng này!');
+        router.push('/login');
+        return;
     }
 
-    await axios.put('http://localhost:3000/wishlist/1', wishlist);
-    await fetchWishlist();
-  } catch (error) {
-    console.error('Lỗi khi cập nhật danh sách yêu thích:', error);
-    alert('Có lỗi xảy ra, vui lòng thử lại.');
-  }
+    try {
+        const { data: userWishlists } = await axios.get(`http://localhost:3000/wishlist?userId=${user.id}`);
+        
+        if (userWishlists.length > 0) { // Nếu đã có wishlist
+            let userWishlist = userWishlists[0];
+            const productIndex = userWishlist.products.findIndex(p => p.id === product.id);
+
+            if (productIndex !== -1) { // Xóa sản phẩm
+                userWishlist.products.splice(productIndex, 1);
+            } else { // Thêm sản phẩm
+                const { id, name, image, price, discount } = product;
+                userWishlist.products.push({ id, name, image, price, discount });
+                alert('Đã thêm vào danh sách yêu thích');
+
+            }
+            await axios.put(`http://localhost:3000/wishlist/${userWishlist.id}`, userWishlist);
+                alert('Đã xoá khỏi danh sách yêu thích');
+
+        
+        } else { // Nếu chưa có wishlist, tạo mới
+            const { id, name, image, price, discount } = product;
+            const newWishlist = { userId: user.id, products: [{ id, name, image, price, discount }] };
+            await axios.post('http://localhost:3000/wishlist', newWishlist);
+            
+        }
+
+        await fetchWishlist(); // Tải lại danh sách yêu thích để cập nhật giao diện
+    } catch (error) {
+        console.error('Lỗi khi cập nhật danh sách yêu thích:', error);
+    }
 };
+
+// === KẾT THÚC PHẦN CODE CŨ ĐƯỢC THAY THẾ ===
 
 const readCoupons = async () => {
   try {
@@ -81,7 +118,6 @@ const readCategory = async () => {
   }
 }
 
-// 2. Cập nhật hàm readProduct để có thể lọc theo cả danh mục và tìm kiếm
 const readProduct = async () => {
   try {
     let url = new URL('http://localhost:3000/products');
@@ -99,10 +135,9 @@ const readProduct = async () => {
   }
 }
 
-// 3. Thêm hàm mới để xử lý việc click vào danh mục
 const filterByCategory = (categoryId) => {
   selectedCategoryId.value = categoryId;
-  readProduct(); // Gọi lại hàm đọc sản phẩm với bộ lọc mới
+  readProduct();
 }
 
 const searchProduct = () => {
@@ -140,6 +175,7 @@ watch(sortOption, () => {
   sortProducts()
 })
 </script>
+
 
 <template>
   <div class="container-fluid my-5">
@@ -195,7 +231,6 @@ watch(sortOption, () => {
 
       <div class="col-lg-9">
         <div class="d-flex justify-content-between align-items-center mb-4">
-          <!-- <p class="mb-0 text-muted">Hiển thị {{ products.length }} sản phẩm</p> -->
           <h3>Sản phẩm</h3>
           <select v-model="sortOption" class="form-select w-auto">
             <option selected>Sắp xếp mặc định</option>
@@ -242,9 +277,6 @@ watch(sortOption, () => {
               </router-link>
               <div class="card-footer bg-transparent border-0 d-flex justify-content-center gap-2 pb-3">
                 <div class="card-footer bg-transparent border-0 d-flex justify-content-center gap-2 pb-3">
-                  <button class="btn btn-outline-success px-4 py-2" @click="addToCart(item)">
-                    Mua<i class="fa fa-shopping-cart"></i>
-                  </button>
                   <button class="btn px-4 py-2" @click="toggleWishlist(item)"
                     :class="isInWishlist(item.id) ? 'btn-danger' : 'btn-outline-danger'">
                     <i class="fa me-2" :class="isInWishlist(item.id) ? 'fa-heart-crack' : 'fa-heart'"></i>

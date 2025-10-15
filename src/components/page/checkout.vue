@@ -77,7 +77,9 @@ const placeOrder = async () => {
                                 <label for="customerPhone" class="form-label">Số điện thoại</label>
                                 <input type="tel" v-model="customerPhone" class="form-control" id="customerPhone" required>
                             </div>
-                            <button type="submit" class="btn btn-dark w-100 fw-semibold">Đặt hàng (COD)</button>
+                            <button type="submit" class="btn btn-outline-success w-100 fw-semibold">Đặt hàng (COD)</button>
+                            <button type="submit" class="btn mt-3 btn-outline-primary w-100 fw-semibold">VNPAY</button>
+
                         </form>
                     </div>
                 </div>

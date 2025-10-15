@@ -1,19 +1,43 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue';
-import { useRoute } from 'vue-router'
+// 1. Thêm useRouter để điều hướng khi người dùng chưa đăng nhập
+import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios';
 
 const product = ref(null)
 const route = useRoute()
+const router = useRouter() // Khởi tạo router
 const categories = ref([])
 const relatedProducts = ref([])
 const isFavorited = ref(false);
 
+// === BẮT ĐẦU PHẦN SỬA LOGIC WISHLIST THEO USERID ===
+
+// Hàm tiện ích để lấy thông tin người dùng đang đăng nhập
+const getLoggedInUser = () => {
+    const user = localStorage.getItem('loggedInUser');
+    return user ? JSON.parse(user) : null;
+};
+
+// Sửa lại hàm checkFavoriteStatus để kiểm tra theo userId
 const checkFavoriteStatus = async () => {
     if (!product.value) return;
+    const user = getLoggedInUser();
+    // Nếu không có user, chắc chắn là chưa yêu thích
+    if (!user) {
+        isFavorited.value = false;
+        return;
+    }
+
     try {
-        const response = await axios.get('http://localhost:3000/wishlist/1');
-        isFavorited.value = response.data.products.some(p => p.id === product.value.id);
+        // Lấy wishlist của đúng user đang đăng nhập
+        const { data: userWishlists } = await axios.get(`http://localhost:3000/wishlist?userId=${user.id}`);
+        if (userWishlists.length > 0) {
+            const userWishlist = userWishlists[0];
+            isFavorited.value = userWishlist.products.some(p => p.id === product.value.id);
+        } else {
+            isFavorited.value = false; // User này chưa có wishlist
+        }
     } catch (error) {
         console.error("Lỗi khi kiểm tra trạng thái yêu thích:", error);
         isFavorited.value = false;
@@ -22,42 +46,63 @@ const checkFavoriteStatus = async () => {
 
 const toggleWishlist = async () => {
     if (!product.value) return;
-    try {
-        const { data: wishlist } = await axios.get('http://localhost:3000/wishlist/1');
-        const productIndex = wishlist.products.findIndex(p => p.id === product.value.id);
+    const user = getLoggedInUser();
+    // Yêu cầu đăng nhập nếu chưa có
+    if (!user) {
+        alert('Bạn cần đăng nhập để sử dụng chức năng này!');
+        router.push('/login');
+        return;
+    }
 
-        if (productIndex !== -1) {
-            wishlist.products.splice(productIndex, 1);
-            alert('Đã xóa khỏi danh sách yêu thích');
+    try {
+        const { data: userWishlists } = await axios.get(`http://localhost:3000/wishlist?userId=${user.id}`);
+
+        if (userWishlists.length > 0) {
+            // Trường hợp 1: User đã có wishlist -> Cập nhật (PUT)
+            let userWishlist = userWishlists[0];
+            const productIndex = userWishlist.products.findIndex(p => p.id === product.value.id);
+
+            if (productIndex !== -1) {
+                userWishlist.products.splice(productIndex, 1);
+                alert('Đã xóa khỏi danh sách yêu thích');
+            } else {
+                const { id, name, image, price, discount } = product.value;
+                userWishlist.products.push({ id, name, image, price, discount });
+                alert('Đã thêm vào danh sách yêu thích');
+            }
+            await axios.put(`http://localhost:3000/wishlist/${userWishlist.id}`, userWishlist);
+
         } else {
-            wishlist.products.push({
-                id: product.value.id,
-                name: product.value.name,
-                image: product.value.image,
-                price: product.value.price,
-                discount: product.value.discount
-            });
+            // Trường hợp 2: User chưa có wishlist -> Tạo mới (POST)
+            const { id, name, image, price, discount } = product.value;
+            const newWishlist = {
+                userId: user.id,
+                products: [{ id, name, image, price, discount }]
+            };
+            await axios.post('http://localhost:3000/wishlist', newWishlist);
             alert('Đã thêm vào danh sách yêu thích');
         }
 
-        await axios.put('http://localhost:3000/wishlist/1', wishlist);
-        await checkFavoriteStatus(); // Cập nhật lại trạng thái nút bấm
+        await checkFavoriteStatus(); // Tải lại trạng thái nút bấm
     } catch (error) {
         console.error('Lỗi khi cập nhật danh sách yêu thích:', error);
-        alert('Có lỗi xảy ra, vui lòng thử lại.');
     }
 };
+
+// === KẾT THÚC PHẦN SỬA LOGIC WISHLIST ===
+
 
 const readProductDetail = async () => {
     try {
         const res = await axios.get(`http://localhost:3000/products/${route.params.id}`)
         product.value = res.data
         if (product.value?.categoryId) {
-            await readRelatedProducts(product.value.categoryId)
+            // 2. Sửa lại tham số truyền vào cho đúng với định nghĩa hàm của bạn
+            await readRelatedProducts(product.value.categoryId);
         }
         await checkFavoriteStatus();
     } catch (err) {
-        console.error('Err: ', err)
+        console.error('Lỗi tải sản phẩm: ', err)
     }
 }
 
@@ -70,6 +115,7 @@ const readCategories = async () => {
     }
 }
 
+// Giữ nguyên hàm readRelatedProducts của bạn
 const readRelatedProducts = async (categoryId) => {
     try {
         const res = await axios.get(`http://localhost:3000/products?categoryId=${categoryId}`)
@@ -79,6 +125,7 @@ const readRelatedProducts = async (categoryId) => {
     }
 }
 
+// Giữ nguyên hàm addToCart của bạn
 const addToCart = async () => {
     if (!product.value) return;
     try {
