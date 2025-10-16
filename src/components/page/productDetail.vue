@@ -1,42 +1,41 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue';
-// 1. Thêm useRouter để điều hướng khi người dùng chưa đăng nhập
 import { useRoute, useRouter } from 'vue-router'
+import { useStore } from 'vuex'; 
 import axios from 'axios';
+import { useToast } from 'vue-toastification';
+import { toast } from "vue3-toastify";
 
+
+const Toast = useToast();
 const product = ref(null)
 const route = useRoute()
-const router = useRouter() // Khởi tạo router
+const router = useRouter()
+const store = useStore(); 
 const categories = ref([])
 const relatedProducts = ref([])
 const isFavorited = ref(false);
 
-// === BẮT ĐẦU PHẦN SỬA LOGIC WISHLIST THEO USERID ===
-
-// Hàm tiện ích để lấy thông tin người dùng đang đăng nhập
 const getLoggedInUser = () => {
     const user = localStorage.getItem('loggedInUser');
     return user ? JSON.parse(user) : null;
 };
 
-// Sửa lại hàm checkFavoriteStatus để kiểm tra theo userId
 const checkFavoriteStatus = async () => {
     if (!product.value) return;
     const user = getLoggedInUser();
-    // Nếu không có user, chắc chắn là chưa yêu thích
     if (!user) {
         isFavorited.value = false;
         return;
     }
 
     try {
-        // Lấy wishlist của đúng user đang đăng nhập
         const { data: userWishlists } = await axios.get(`http://localhost:3000/wishlist?userId=${user.id}`);
         if (userWishlists.length > 0) {
             const userWishlist = userWishlists[0];
             isFavorited.value = userWishlist.products.some(p => p.id === product.value.id);
         } else {
-            isFavorited.value = false; // User này chưa có wishlist
+            isFavorited.value = false;
         }
     } catch (error) {
         console.error("Lỗi khi kiểm tra trạng thái yêu thích:", error);
@@ -44,52 +43,61 @@ const checkFavoriteStatus = async () => {
     }
 };
 
+const isTogglingWishlist = ref(false);
+
 const toggleWishlist = async () => {
-    if (!product.value) return;
+    if (isTogglingWishlist.value || !product.value) return;
+
     const user = getLoggedInUser();
-    // Yêu cầu đăng nhập nếu chưa có
     if (!user) {
-        alert('Bạn cần đăng nhập để sử dụng chức năng này!');
+        Toast.error('Bạn cần đăng nhập để sử dụng chức năng này!', { theme: "colored" });
         router.push('/login');
         return;
     }
 
+    isTogglingWishlist.value = true;
+
     try {
         const { data: userWishlists } = await axios.get(`http://localhost:3000/wishlist?userId=${user.id}`);
+        let actionMessage = ''; // Biến lưu thông báo duy nhất
 
         if (userWishlists.length > 0) {
-            // Trường hợp 1: User đã có wishlist -> Cập nhật (PUT)
             let userWishlist = userWishlists[0];
             const productIndex = userWishlist.products.findIndex(p => p.id === product.value.id);
 
             if (productIndex !== -1) {
                 userWishlist.products.splice(productIndex, 1);
-                alert('Đã xóa khỏi danh sách yêu thích');
+                actionMessage = 'Đã xóa khỏi danh sách yêu thích';
             } else {
                 const { id, name, image, price, discount } = product.value;
                 userWishlist.products.push({ id, name, image, price, discount });
-                alert('Đã thêm vào danh sách yêu thích');
+                actionMessage = 'Đã thêm vào danh sách yêu thích';
             }
-            await axios.put(`http://localhost:3000/wishlist/${userWishlist.id}`, userWishlist);
 
+            await axios.put(`http://localhost:3000/wishlist/${userWishlist.id}`, userWishlist);
         } else {
-            // Trường hợp 2: User chưa có wishlist -> Tạo mới (POST)
             const { id, name, image, price, discount } = product.value;
             const newWishlist = {
                 userId: user.id,
                 products: [{ id, name, image, price, discount }]
             };
             await axios.post('http://localhost:3000/wishlist', newWishlist);
-            alert('Đã thêm vào danh sách yêu thích');
+            actionMessage = 'Đã thêm vào danh sách yêu thích';
         }
 
-        await checkFavoriteStatus(); // Tải lại trạng thái nút bấm
+        isFavorited.value = !isFavorited.value;
+        if (isFavorited.value) {
+            Toast.success(actionMessage, { theme: "colored" });
+        } else {
+            Toast.info(actionMessage, { theme: "colored" });
+        }
+
     } catch (error) {
         console.error('Lỗi khi cập nhật danh sách yêu thích:', error);
+    } finally {
+        isTogglingWishlist.value = false;
     }
 };
-
-// === KẾT THÚC PHẦN SỬA LOGIC WISHLIST ===
 
 
 const readProductDetail = async () => {
@@ -97,7 +105,6 @@ const readProductDetail = async () => {
         const res = await axios.get(`http://localhost:3000/products/${route.params.id}`)
         product.value = res.data
         if (product.value?.categoryId) {
-            // 2. Sửa lại tham số truyền vào cho đúng với định nghĩa hàm của bạn
             await readRelatedProducts(product.value.categoryId);
         }
         await checkFavoriteStatus();
@@ -115,7 +122,6 @@ const readCategories = async () => {
     }
 }
 
-// Giữ nguyên hàm readRelatedProducts của bạn
 const readRelatedProducts = async (categoryId) => {
     try {
         const res = await axios.get(`http://localhost:3000/products?categoryId=${categoryId}`)
@@ -125,28 +131,14 @@ const readRelatedProducts = async (categoryId) => {
     }
 }
 
-// Giữ nguyên hàm addToCart của bạn
-const addToCart = async () => {
+const addToCart = () => {
     if (!product.value) return;
     try {
-        const { data: existingItems } = await axios.get(`http://localhost:3000/cart?id=${product.value.id}`);
-        const existingItem = existingItems[0];
-        if (existingItem) {
-            await axios.patch(`http://localhost:3000/cart/${existingItem.id}`, {
-                quantity: existingItem.quantity + 1
-            });
-            alert('Đã cập nhật số lượng sản phẩm trong giỏ hàng!');
-        } else {
-            const cartItem = {
-                ...product.value,
-                quantity: 1
-            };
-            await axios.post('http://localhost:3000/cart', cartItem);
-            alert('Đã thêm sản phẩm vào giỏ hàng!');
-        }
+        store.dispatch('cart/addProductToCart', product.value);
+        Toast.success('Đã thêm sản phẩm vào giỏ hàng!', { theme: "colored" });
     } catch (err) {
         console.error('Lỗi khi thêm vào giỏ hàng:', err);
-        alert('Có lỗi xảy ra, vui lòng thử lại.');
+        Toast.error('Có lỗi xảy ra, vui lòng thử lại.', { theme: "colored" });
     }
 }
 
@@ -269,7 +261,6 @@ watch(() => route.params.id, () => {
     }
 }
 
-/* ========== PHẦN SẢN PHẨM LIÊN QUAN ========== */
 .related-products {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -295,9 +286,7 @@ watch(() => route.params.id, () => {
 .related-img {
     width: 100%;
     height: 220px;
-    /* Cố định chiều cao ảnh */
     object-fit: cover;
-    /* Cắt ảnh cho đều */
 }
 
 .related-body {
@@ -312,7 +301,6 @@ watch(() => route.params.id, () => {
     margin-bottom: 8px;
     color: #222;
     min-height: 40px;
-    /* Giúp tiêu đề đều dòng */
 }
 
 .related-price {

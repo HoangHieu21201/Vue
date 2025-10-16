@@ -3,11 +3,9 @@ import { computed, ref, onMounted } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
-import { useToast } from 'vue-toastification';
 
 const store = useStore();
 const router = useRouter();
-const toast = useToast(); 
 
 const cart = computed(() => store.getters['cart/cartItems']);
 const subtotal = computed(() => store.getters['cart/cartTotal']);
@@ -33,7 +31,7 @@ const finalTotal = computed(() => {
 
 const applyCoupon = async () => {
     if (!couponCode.value) {
-        toast.warning("Vui lòng nhập mã giảm giá."); 
+        alert("Vui lòng nhập mã giảm giá.");
         return;
     }
     try {
@@ -44,22 +42,22 @@ const applyCoupon = async () => {
             const now = new Date();
             const expiryDate = new Date(coupon.expiry_date);
             if (now > expiryDate) {
-                toast.error("Mã giảm giá đã hết hạn!"); 
+                alert("Mã giảm giá đã hết hạn!");
                 appliedCoupon.value = null;
                 discountAmount.value = 0;
             } else {
-                toast.success(`Áp dụng mã giảm giá ${coupon.discount}% thành công!`); 
+                alert(`Áp dụng mã giảm giá ${coupon.discount}% thành công!`);
                 appliedCoupon.value = coupon;
                 discountAmount.value = (subtotal.value * coupon.discount) / 100;
             }
         } else {
-            toast.error("Mã giảm giá không hợp lệ!"); 
+            alert("Mã giảm giá không hợp lệ!");
             appliedCoupon.value = null;
             discountAmount.value = 0;
         }
     } catch (error) {
         console.error("Lỗi khi áp dụng coupon:", error);
-        toast.error("Có lỗi xảy ra, vui lòng thử lại."); 
+        alert("Có lỗi xảy ra, vui lòng thử lại.");
     }
 };
 
@@ -76,13 +74,13 @@ onMounted(() => {
 
 const placeOrder = async () => {
     if (!customerName.value || !customerAddress.value || !customerPhone.value) {
-        toast.warning('Vui lòng điền đầy đủ thông tin giao hàng.'); 
+        alert('Vui lòng điền đầy đủ thông tin giao hàng.');
         return;
     }
 
     const loggedUser = JSON.parse(localStorage.getItem("loggedInUser"));
     if (!loggedUser) {
-        toast.error('Bạn cần đăng nhập để đặt hàng.'); 
+        alert('Bạn cần đăng nhập để đặt hàng.');
         router.push('/login');
         return;
     }
@@ -109,15 +107,25 @@ const placeOrder = async () => {
     };
 
     if (paymentMethod.value === 'cod') {
+        let newOrder;
+
         try {
             const response = await axios.post('http://localhost:3000/orders', orderData);
-            toast.success('Đặt hàng thành công!'); 
-            store.dispatch('cart/deleteAllCart');
-            router.push('/order-history');
+            newOrder = response.data;
         } catch (error) {
             console.error("Lỗi khi đặt hàng:", error);
-            toast.error('Đặt hàng thất bại, vui lòng thử lại.');
+            router.push({ name: 'OrderStatus', query: { status: 'failed' } });
+            return; 
         }
+        
+        alert('Đặt hàng thành công!');
+
+        await store.dispatch('cart/deleteAllCart');
+
+        router.push({
+            name: 'OrderStatus',
+            query: { status: 'success', orderId: newOrder.id }
+        });
 
     } else if (paymentMethod.value === 'vnpay') {
         const pendingOrderId = sessionStorage.getItem('pendingOrderId');
@@ -132,31 +140,29 @@ const placeOrder = async () => {
             orderData.status = 'Chờ thanh toán';
             const orderResponse = await axios.post('http://localhost:3000/orders', orderData);
             const newOrder = orderResponse.data;
-
             sessionStorage.setItem('pendingOrderId', newOrder.id);
-
             const paymentPayload = {
                 orderId: newOrder.id,
                 amount: finalTotal.value,
                 orderDescription: `Thanh toan cho don hang #${newOrder.id}`,
             };
-
             const { data } = await axios.post('http://localhost:3001/create_payment_url', paymentPayload);
-
             if (data.url) {
                 window.location.href = data.url;
             } else {
                 sessionStorage.removeItem('pendingOrderId');
-                toast.error('Có lỗi xảy ra, không thể tạo được URL thanh toán.'); 
+                alert('Có lỗi xảy ra, không thể tạo được URL thanh toán.');
             }
         } catch (error) {
             sessionStorage.removeItem('pendingOrderId');
             console.error("Lỗi khi tạo thanh toán VNPay:", error);
-            toast.error("Đã xảy ra lỗi khi tạo yêu cầu thanh toán. Vui lòng thử lại."); 
+            alert("Đã xảy ra lỗi khi tạo yêu cầu thanh toán. Vui lòng thử lại.");
         }
     }
 };
 </script>
+
+
 <template>
     <div class="container my-5">
         <div class="row">
@@ -222,7 +228,7 @@ const placeOrder = async () => {
                                 <small class="text-muted">SL: {{ item.quantity }}</small>
                             </div>
                             <span class="fw-semibold small">{{ (item.discount * item.quantity).toLocaleString('vi-VN')
-                            }} ₫</span>
+                                }} ₫</span>
                         </div>
                         <hr>
                         <div class="input-group mb-3">

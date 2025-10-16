@@ -1,37 +1,31 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
-// Thêm useRouter để có thể điều hướng nếu cần
 import { useRouter } from 'vue-router';
+import { useStore } from 'vuex';
+const store = useStore();
 
 const wishlistItems = ref([]);
 const router = useRouter();
 
-// === BẮT ĐẦU PHẦN SỬA LOGIC THEO USERID ===
-
-// Hàm tiện ích để lấy thông tin người dùng đang đăng nhập
 const getLoggedInUser = () => {
     const user = localStorage.getItem('loggedInUser');
     return user ? JSON.parse(user) : null;
 };
 
-// Cập nhật lại fetchWishlist để lấy theo userId
 const fetchWishlist = async () => {
   const user = getLoggedInUser();
-  // Nếu không đăng nhập, không hiển thị gì cả
   if (!user) {
     wishlistItems.value = [];
     return;
   }
 
   try {
-    // Lấy wishlist của đúng user đang đăng nhập
     const { data: userWishlists } = await axios.get(`http://localhost:3000/wishlist?userId=${user.id}`);
     if (userWishlists.length > 0) {
-      // Lọc bỏ các sản phẩm rỗng hoặc không có id để tránh lỗi
       wishlistItems.value = userWishlists[0].products.filter(p => p && p.id);
     } else {
-      wishlistItems.value = []; // User này chưa có wishlist
+      wishlistItems.value = []; 
     }
   } catch (error) {
     console.error("Lỗi khi tải danh sách yêu thích:", error);
@@ -39,7 +33,6 @@ const fetchWishlist = async () => {
   }
 };
 
-// Cập nhật lại removeFromWishlist để xóa sản phẩm của đúng user
 const removeFromWishlist = async (productId) => {
   const user = getLoggedInUser();
   if (!user) {
@@ -53,13 +46,11 @@ const removeFromWishlist = async (productId) => {
     if (userWishlists.length > 0) {
         let userWishlist = userWishlists[0];
         const initialLength = userWishlist.products.length;
-        // Lọc và xóa sản phẩm khỏi mảng
         userWishlist.products = userWishlist.products.filter(p => p.id !== productId);
         
         if (userWishlist.products.length < initialLength) {
-            // Gửi lại toàn bộ đối tượng wishlist đã cập nhật
             await axios.put(`http://localhost:3000/wishlist/${userWishlist.id}`, userWishlist);
-            await fetchWishlist(); // Tải lại danh sách để cập nhật giao diện
+            await fetchWishlist(); 
             alert('Đã xóa sản phẩm khỏi danh sách yêu thích.');
         }
     }
@@ -69,7 +60,6 @@ const removeFromWishlist = async (productId) => {
   }
 };
 
-// === KẾT THÚC PHẦN SỬA LOGIC ===
 
 const formatPrice = (price) => {
   if (typeof price !== 'number') return '';

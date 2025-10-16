@@ -1,5 +1,5 @@
+// router/index.js
 import { createRouter, createWebHistory } from "vue-router";
-
 
 // layout
 import userLayout from "../src/layout/userLayout.vue";
@@ -17,7 +17,8 @@ import cart from "../src/components/page/cart.vue";
 import checkout from "../src/components/page/checkout.vue";
 import orderHistory from "../src/components/page/orderHistory.vue";
 import wishlist from "../src/components/page/wishlist.vue"
-import paymentReturn from '../src/components/page/payment-return.vue'; 
+import paymentReturn from '../src/components/page/payment-return.vue';
+import OrderStatus from '../src/components/page/OrderStatus.vue';
 
 // admin pages
 import categories from "../src/components/admin/categories.vue";
@@ -45,7 +46,8 @@ const routes = [
       { path: "checkout", component: checkout },
       { path: "order-history", component: orderHistory },
       { path: "wishlist", component: wishlist },
-       { path: "payment-return", component: paymentReturn }, 
+      { path: "payment-return", name: "PaymentReturn", component: paymentReturn },
+      { path: "order-status", name: "OrderStatus", component: OrderStatus },
     ],
   },
   {

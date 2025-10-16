@@ -1,21 +1,16 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue'; // THÊM 'computed' VÀO ĐÂY
+import { useStore } from 'vuex'; // THÊM DÒNG NÀY
 import { useRouter } from 'vue-router'
 import axios from 'axios';
 
 const router = useRouter()
+const store = useStore(); // THÊM DÒNG NÀY
 const user = ref(null)
-const cartItemCount = ref(0);
 
-const fetchCartCount = async () => {
-  try {
-    const { data } = await axios.get('http://localhost:3000/cart');
-    cartItemCount.value = data.length;
-  } catch (error) {
-    console.error("Lỗi khi lấy số lượng giỏ hàng:", error);
-    cartItemCount.value = 0;
-  }
-};
+// SỬA PHẦN NÀY: Thay thế ref và hàm fetch bằng computed property
+const cartItemCount = computed(() => store.getters['cart/cartItems'].length);
+
 onMounted(async () => {
   const storedUser = JSON.parse(localStorage.getItem('loggedInUser'))
   if (storedUser) {
@@ -26,7 +21,7 @@ onMounted(async () => {
       console.error(err)
     }
   }
-  fetchCartCount();
+  // Xóa hàm fetchCartCount(); không cần thiết nữa
 })
 
 const handleLogout = () => {
@@ -47,25 +42,21 @@ const scrollToTop = () => {
 onMounted(() => {
   window.addEventListener('scroll', handleScroll)
 })
-
 </script>
 
 <template>
   <header>
     <nav class="navbar navbar-expand-lg shadow-sm sticky-top custom-navbar">
       <div class="container">
-        <!-- Logo -->
         <router-link class="navbar-brand d-flex align-items-center" to="/">
           <img src="https://figurecollector.io.vn/wp-content/uploads/2025/09/logofigure.png" alt="logo" width="220"
             class="me-2" />
         </router-link>
 
-        <!-- Toggle (mobile) -->
         <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
           <i class="fa fa-bars text-dark fs-4"></i>
         </button>
 
-        <!-- Nav links -->
         <div class="collapse navbar-collapse" id="navbarNav">
           <ul class="navbar-nav mx-auto text-center gap-lg-4">
             <li class="nav-item">
@@ -88,7 +79,6 @@ onMounted(() => {
           </ul>
 
 
-          <!-- Right actions -->
           <div class="d-flex align-items-center gap-2">
             <template v-if="user">
               <span class="text-dark">
@@ -124,14 +114,11 @@ onMounted(() => {
     </nav>
   </header>
 
-  <!-- Router view -->
   <router-view />
 
-  <!-- FOOTER -->
   <footer class="footer text-dark mt-5">
     <div class="container py-5">
       <div class="row gy-4">
-        <!-- Logo + Description -->
         <div class="col-lg-4 col-md-6">
           <router-link class="navbar-brand d-flex align-items-center" to="/">
             <img src="https://figurecollector.io.vn/wp-content/uploads/2025/09/logofigure.png" alt="logo" width="220"
@@ -149,7 +136,6 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- Links -->
         <div class="col-lg-2 col-md-6">
           <h6 class="fw-semibold mb-3 text-black">Liên kết nhanh</h6>
           <ul class="list-unstyled footer-links">
@@ -160,7 +146,6 @@ onMounted(() => {
           </ul>
         </div>
 
-        <!-- Support -->
         <div class="col-lg-3 col-md-6">
           <h6 class="fw-semibold mb-3 text-black">Hỗ trợ</h6>
           <ul class="list-unstyled footer-links">
@@ -171,7 +156,6 @@ onMounted(() => {
           </ul>
         </div>
 
-        <!-- Contact -->
         <div class="col-lg-3 col-md-6">
           <h6 class="fw-semibold mb-3 text-black">Liên hệ</h6>
           <p class="small mb-1"><i class="fa fa-map-marker-alt me-2"></i>BMT, Dak Lak, Vietnam</p>

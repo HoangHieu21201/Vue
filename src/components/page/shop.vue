@@ -2,8 +2,12 @@
 import { ref, onMounted, watch } from 'vue'
 import axios from 'axios'
 import { useStore } from 'vuex'
-// 1. Thêm useRouter để điều hướng
 import { useRouter } from 'vue-router'
+import { useToast } from 'vue-toastification';
+import { toast } from "vue3-toastify";
+
+
+const Toast = useToast();
 
 const store = useStore()
 const router = useRouter() // Khởi tạo router
@@ -17,12 +21,9 @@ const selectedCategoryId = ref(null);
 
 const addToCart = (product) => {
   store.dispatch('cart/addToCart', product);
-  alert('Đã thêm sản phẩm vào giỏ hàng!');
+  Toast.success('Đã thêm sản phẩm vào giỏ hàng!');
 };
 
-// === BẮT ĐẦU PHẦN CODE CŨ ĐƯỢC THAY THẾ ===
-
-// Hàm tiện ích để lấy thông tin người dùng
 const getLoggedInUser = () => {
     const user = localStorage.getItem('loggedInUser');
     return user ? JSON.parse(user) : null;
@@ -54,44 +55,49 @@ const isInWishlist = (productId) => {
 };
 
 const toggleWishlist = async (product) => {
-    const user = getLoggedInUser();
-    if (!user) {
-        alert('Bạn cần đăng nhập để sử dụng chức năng này!');
-        router.push('/login');
-        return;
+  const user = getLoggedInUser();
+  if (!user) {
+    Toast.error('Bạn cần đăng nhập để sử dụng chức năng này!');
+    router.push('/login');
+    return;
+  }
+
+  try {
+    const { data: userWishlists } = await axios.get(`http://localhost:3000/wishlist?userId=${user.id}`);
+    let message = '';
+
+    if (userWishlists.length > 0) {
+      let userWishlist = userWishlists[0];
+      const productIndex = userWishlist.products.findIndex(p => p.id === product.id);
+
+      if (productIndex !== -1) {
+        // XÓA SẢN PHẨM
+        userWishlist.products.splice(productIndex, 1);
+        message = 'Đã xóa khỏi danh sách yêu thích';
+      } else {
+        // THÊM SẢN PHẨM
+        const { id, name, image, price, discount } = product;
+        userWishlist.products.push({ id, name, image, price, discount });
+        message = 'Đã thêm vào danh sách yêu thích';
+      }
+
+      await axios.put(`http://localhost:3000/wishlist/${userWishlist.id}`, userWishlist);
+    } else {
+      // CHƯA CÓ WISHLIST -> TẠO MỚI
+      const { id, name, image, price, discount } = product;
+      const newWishlist = { userId: user.id, products: [{ id, name, image, price, discount }] };
+      await axios.post('http://localhost:3000/wishlist', newWishlist);
+      message = 'Đã thêm vào danh sách yêu thích';
     }
 
-    try {
-        const { data: userWishlists } = await axios.get(`http://localhost:3000/wishlist?userId=${user.id}`);
-        
-        if (userWishlists.length > 0) { // Nếu đã có wishlist
-            let userWishlist = userWishlists[0];
-            const productIndex = userWishlist.products.findIndex(p => p.id === product.id);
+    Toast(message); // ✅ chỉ hiện 1 lần
+    await fetchWishlist(); // cập nhật lại giao diện
 
-            if (productIndex !== -1) { // Xóa sản phẩm
-                userWishlist.products.splice(productIndex, 1);
-            } else { // Thêm sản phẩm
-                const { id, name, image, price, discount } = product;
-                userWishlist.products.push({ id, name, image, price, discount });
-                alert('Đã thêm vào danh sách yêu thích');
-
-            }
-            await axios.put(`http://localhost:3000/wishlist/${userWishlist.id}`, userWishlist);
-                alert('Đã xoá khỏi danh sách yêu thích');
-
-        
-        } else { // Nếu chưa có wishlist, tạo mới
-            const { id, name, image, price, discount } = product;
-            const newWishlist = { userId: user.id, products: [{ id, name, image, price, discount }] };
-            await axios.post('http://localhost:3000/wishlist', newWishlist);
-            
-        }
-
-        await fetchWishlist(); // Tải lại danh sách yêu thích để cập nhật giao diện
-    } catch (error) {
-        console.error('Lỗi khi cập nhật danh sách yêu thích:', error);
-    }
+  } catch (error) {
+    console.error('Lỗi khi cập nhật danh sách yêu thích:', error);
+  }
 };
+
 
 // === KẾT THÚC PHẦN CODE CŨ ĐƯỢC THAY THẾ ===
 
@@ -106,7 +112,7 @@ const readCoupons = async () => {
 
 const copyCode = (code) => {
   navigator.clipboard.writeText(code)
-  alert(`Đã sao chép mã: ${code}`)
+  Toast.success(`Đã sao chép mã: ${code}`);
 }
 
 const readCategory = async () => {
