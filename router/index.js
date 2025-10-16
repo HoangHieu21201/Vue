@@ -21,6 +21,7 @@ import paymentReturn from '../src/components/page/payment-return.vue';
 import OrderStatus from '../src/components/page/OrderStatus.vue';
 
 // admin pages
+import homeAdmin from "../src/components/admin/home.vue";
 import categories from "../src/components/admin/categories.vue";
 import CRUDUser from "../src/components/admin/CRUDUser.vue";
 import product from "../src/components/admin/product.vue";
@@ -42,7 +43,7 @@ const routes = [
       { path: "shop", component: shop },
       { path: "productDetail/:id", component: productDetail },
       { path: "profile", component: profile },
-      { path: "cart", component: cart },
+      { path: "cart", name: "cart", component: cart },
       { path: "checkout", component: checkout },
       { path: "order-history", component: orderHistory },
       { path: "wishlist", component: wishlist },
@@ -55,7 +56,8 @@ const routes = [
     component: adminLayout,
     meta: { requiresAdmin: true },
     children: [
-      { path: "", redirect: "/admin/user" },
+      { path: "", redirect: "/admin/dashboard" },
+      { path: "dashboard", component: homeAdmin },
       { path: "user", component: CRUDUser },
       { path: "categories", component: categories },
       { path: "product", component: product },

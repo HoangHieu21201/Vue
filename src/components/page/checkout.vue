@@ -3,7 +3,7 @@ import { computed, ref, onMounted } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
-import Swal from 'sweetalert2'; // ✅ thêm thư viện thông báo đẹp
+import Swal from 'sweetalert2';
 
 const store = useStore();
 const router = useRouter();
@@ -98,6 +98,41 @@ onMounted(() => {
     }
 });
 
+// >> MỚI: Hàm cập nhật (trừ) số lượng tồn kho
+const updateStock = async (items) => {
+    try {
+        const stockUpdates = items.map(async (item) => {
+            const { data: product } = await axios.get(`http://localhost:3000/products/${item.id}`);
+            const newQuantity = product.quantity - item.quantity;
+
+            return axios.patch(`http://localhost:3000/products/${item.id}`, {
+                quantity: newQuantity >= 0 ? newQuantity : 0 // Đảm bảo số lượng không âm
+            });
+        });
+        await Promise.all(stockUpdates);
+    } catch (error) {
+        console.error("Lỗi nghiêm trọng khi cập nhật tồn kho:", error);
+        // Cần có cơ chế báo lỗi cho admin ở đây nếu cần
+    }
+};
+const sendOrderConfirmationEmail = async (order) => {
+    try {
+        // Thêm email của người dùng vào order data để gửi đi
+        const loggedUser = JSON.parse(localStorage.getItem("loggedInUser"));
+        if (loggedUser && loggedUser.email) {
+            order.customerInfo.email = loggedUser.email;
+        } else {
+            // Nếu không có email, không gửi
+            console.warn("Không tìm thấy email khách hàng, không thể gửi mail.");
+            return;
+        }
+
+        await axios.post('http://localhost:3002/send-order-email', order);
+    } catch (error) {
+        // Việc gửi mail thất bại không nên ảnh hưởng tới trải nghiệm người dùng
+        console.error("Gửi email xác nhận thất bại, nhưng đơn hàng đã được tạo:", error);
+    }
+};
 const placeOrder = async () => {
     if (!customerName.value || !customerAddress.value || !customerPhone.value) {
         Swal.fire({
@@ -144,60 +179,36 @@ const placeOrder = async () => {
         createdAt: new Date().toISOString()
     };
 
-    if (paymentMethod.value === 'cod') {
+    // Xử lý chung việc tạo đơn hàng và trừ kho
+    try {
         let newOrder;
-
-        try {
-            const response = await axios.post('http://localhost:3000/orders', orderData);
-            newOrder = response.data;
-        } catch (error) {
-            console.error("Lỗi khi đặt hàng:", error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Đặt hàng thất bại!',
-                text: 'Vui lòng thử lại sau.',
-                confirmButtonColor: '#000'
-            }).then(() => {
-                router.push({ name: 'OrderStatus', query: { status: 'failed' } });
-            });
-            return; 
-        }
-        
-        Swal.fire({
-            icon: 'success',
-            title: 'Đặt hàng thành công!',
-            text: 'Cảm ơn bạn đã mua sắm. Đơn hàng của bạn đang chờ xác nhận.',
-            confirmButtonColor: '#000',
-            confirmButtonText: 'Xem trạng thái đơn hàng'
-        }).then(() => {
-            store.dispatch('cart/deleteAllCart');
-            router.push({
-                name: 'OrderStatus',
-                query: { status: 'success', orderId: newOrder.id }
-            });
-        });
-
-    } else if (paymentMethod.value === 'vnpay') {
-        const pendingOrderId = sessionStorage.getItem('pendingOrderId');
-        if (pendingOrderId) {
-            Swal.fire({
-                icon: 'info',
-                title: 'Đã có giao dịch đang xử lý!',
-                text: 'Bạn có muốn đến Lịch sử đơn hàng để thanh toán lại không?',
-                showCancelButton: true,
-                confirmButtonText: 'Đến Lịch sử',
-                cancelButtonText: 'Ở lại',
-                confirmButtonColor: '#000'
-            }).then((result) => {
-                if (result.isConfirmed) router.push('/order-history');
-            });
-            return;
-        }
-
-        try {
+        if (paymentMethod.value === 'vnpay') {
             orderData.status = 'Chờ thanh toán';
-            const orderResponse = await axios.post('http://localhost:3000/orders', orderData);
-            const newOrder = orderResponse.data;
+        }
+
+        const response = await axios.post('http://localhost:3000/orders', orderData);
+        newOrder = response.data;
+
+        await updateStock(orderData.items);
+
+        // >> GỌI HÀM GỬI EMAIL NGAY SAU KHI TẠO ĐƠN HÀNG
+        await sendOrderConfirmationEmail(newOrder);
+        // Xử lý riêng cho từng phương thức thanh toán
+        if (paymentMethod.value === 'cod') {
+            Swal.fire({
+                icon: 'success',
+                title: 'Đặt hàng thành công!',
+                text: 'Cảm ơn bạn đã mua sắm. Đơn hàng của bạn đang chờ xác nhận.',
+                confirmButtonColor: '#000',
+                confirmButtonText: 'Xem trạng thái đơn hàng'
+            }).then(() => {
+                store.dispatch('cart/deleteAllCart');
+                router.push({
+                    name: 'OrderStatus',
+                    query: { status: 'success', orderId: newOrder.id }
+                });
+            });
+        } else if (paymentMethod.value === 'vnpay') {
             sessionStorage.setItem('pendingOrderId', newOrder.id);
             const paymentPayload = {
                 orderId: newOrder.id,
@@ -206,34 +217,21 @@ const placeOrder = async () => {
             };
             const { data } = await axios.post('http://localhost:3001/create_payment_url', paymentPayload);
             if (data.url) {
-                Swal.fire({
-                    icon: 'info',
-                    title: 'Đang chuyển hướng...',
-                    text: 'Vui lòng đợi trong giây lát để đến trang thanh toán VNPay.',
-                    showConfirmButton: false,
-                    timer: 2000
-                }).then(() => {
-                    window.location.href = data.url;
-                });
+                window.location.href = data.url;
             } else {
-                sessionStorage.removeItem('pendingOrderId');
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Không thể tạo URL thanh toán!',
-                    text: 'Vui lòng thử lại sau.',
-                    confirmButtonColor: '#000'
-                });
+                // Xử lý lỗi nếu không tạo được URL
+                throw new Error("Không thể tạo URL thanh toán!");
             }
-        } catch (error) {
-            sessionStorage.removeItem('pendingOrderId');
-            console.error("Lỗi khi tạo thanh toán VNPay:", error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Thanh toán thất bại!',
-                text: 'Đã xảy ra lỗi khi tạo yêu cầu thanh toán. Vui lòng thử lại.',
-                confirmButtonColor: '#000'
-            });
         }
+    } catch (error) {
+        console.error("Lỗi khi đặt hàng:", error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Đặt hàng thất bại!',
+            text: 'Đã có lỗi xảy ra. Vui lòng thử lại sau.',
+            confirmButtonColor: '#000'
+        });
+        // Logic hoàn kho nếu cần thiết (tùy vào luồng nghiệp vụ)
     }
 };
 </script>
@@ -248,31 +246,37 @@ const placeOrder = async () => {
                         <form @submit.prevent="placeOrder">
                             <div class="mb-3">
                                 <label for="customerName" class="form-label">Họ và tên</label>
-                                <input type="text" v-model="customerName" id="customerName" class="form-control" required>
+                                <input type="text" v-model="customerName" id="customerName" class="form-control"
+                                    required>
                             </div>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label for="customerPhone" class="form-label">Số điện thoại</label>
-                                    <input type="tel" v-model="customerPhone" id="customerPhone" class="form-control" required>
+                                    <input type="tel" v-model="customerPhone" id="customerPhone" class="form-control"
+                                        required>
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label for="customerAddress" class="form-label">Địa chỉ</label>
-                                    <input type="text" v-model="customerAddress" id="customerAddress" class="form-control" required>
+                                    <input type="text" v-model="customerAddress" id="customerAddress"
+                                        class="form-control" required>
                                 </div>
                             </div>
                             <div class="mb-3">
                                 <label for="customerNote" class="form-label">Ghi chú (tùy chọn)</label>
-                                <textarea v-model="customerNote" id="customerNote" class="form-control" rows="3"></textarea>
+                                <textarea v-model="customerNote" id="customerNote" class="form-control"
+                                    rows="3"></textarea>
                             </div>
 
                             <h5 class="fw-bold my-4">Phương thức thanh toán</h5>
                             <div class="list-group">
                                 <label class="list-group-item list-group-item-action d-flex align-items-center">
-                                    <input type="radio" v-model="paymentMethod" value="cod" name="paymentMethod" class="form-check-input me-3">
+                                    <input type="radio" v-model="paymentMethod" value="cod" name="paymentMethod"
+                                        class="form-check-input me-3">
                                     Thanh toán khi nhận hàng (COD)
                                 </label>
                                 <label class="list-group-item list-group-item-action d-flex align-items-center">
-                                    <input type="radio" v-model="paymentMethod" value="vnpay" name="paymentMethod" class="form-check-input me-3">
+                                    <input type="radio" v-model="paymentMethod" value="vnpay" name="paymentMethod"
+                                        class="form-check-input me-3">
                                     Thanh toán qua VNPay
                                 </label>
                             </div>
@@ -290,17 +294,20 @@ const placeOrder = async () => {
                     <div class="card-body p-4">
                         <h4 class="fw-bold mb-3">Tóm tắt đơn hàng</h4>
                         <div v-for="item in cart" :key="item.id" class="d-flex align-items-center mb-3">
-                            <img :src="item.image[0]" class="rounded" style="width: 60px; height: 60px; object-fit: cover;">
+                            <img :src="item.image[0]" class="rounded"
+                                style="width: 60px; height: 60px; object-fit: cover;">
                             <div class="ms-3 flex-grow-1">
                                 <h6 class="mb-0 small">{{ item.name }}</h6>
                                 <small class="text-muted">SL: {{ item.quantity }}</small>
                             </div>
-                            <span class="fw-semibold small">{{ (item.discount * item.quantity).toLocaleString('vi-VN') }} ₫</span>
+                            <span class="fw-semibold small">{{ (item.discount * item.quantity).toLocaleString('vi-VN')
+                            }} ₫</span>
                         </div>
                         <hr>
                         <div class="input-group mb-3">
                             <input type="text" v-model="couponCode" class="form-control" placeholder="Nhập mã giảm giá">
-                            <button class="btn btn-outline-secondary" type="button" @click="applyCoupon">Áp dụng</button>
+                            <button class="btn btn-outline-secondary" type="button" @click="applyCoupon">Áp
+                                dụng</button>
                         </div>
                         <hr>
                         <div class="d-flex justify-content-between mb-2">

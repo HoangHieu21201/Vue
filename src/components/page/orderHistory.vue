@@ -1,76 +1,157 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-
+import { useStore } from 'vuex';
+import axios from 'axios';
+import { toast } from "vue3-toastify";
+import Swal from 'sweetalert2'; // Thêm Swal để có thông báo đẹp hơn
 
 const router = useRouter();
+const store = useStore();
 const orders = ref([]);
 const user = ref(null);
+
+const userReviews = ref([]);
+const reviewingItemId = ref(null);
+const newReview = ref({
+    rating: 5,
+    comment: ''
+});
+
+// >> SỬA LỖI: Thêm orderId vào hàm kiểm tra
+// Bây giờ hàm sẽ kiểm tra xem sản phẩm trong đơn hàng cụ thể này đã được đánh giá chưa
+const hasUserReviewed = (productId, orderId) => {
+    return userReviews.value.some(review => review.productId === productId && review.orderId === orderId);
+};
 
 onMounted(async () => {
     const loggedUser = JSON.parse(localStorage.getItem("loggedInUser"));
     if (loggedUser) {
         user.value = loggedUser;
         try {
-            const response = await fetch(`http://localhost:3000/orders?userId=${loggedUser.id}&_sort=createdAt&_order=desc`);
-            orders.value = await response.json();
+            const ordersResponse = await axios.get(`http://localhost:3000/orders?userId=${loggedUser.id}&_sort=createdAt&_order=desc`);
+            orders.value = ordersResponse.data;
+
+            const reviewsResponse = await axios.get(`http://localhost:3000/reviews?userId=${loggedUser.id}`);
+            userReviews.value = reviewsResponse.data;
+
         } catch (error) {
-            console.error('Failed to fetch orders:', error);
+            console.error('Failed to fetch data:', error);
+            toast.error("Không thể tải lịch sử đơn hàng.");
         }
     }
 });
 
-const cancelOrder = async (orderId) => {
-    if (confirm('Bạn có chắc chắn muốn hủy đơn hàng này?')) {
-        try {
-            const response = await fetch(`http://localhost:3000/orders/${orderId}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: 'Đã hủy' })
-            });
-            if (response.ok) {
-                const order = orders.value.find(o => o.id === orderId);
-                if (order) order.status = 'Đã hủy';
-            }
-        } catch (error) {
-            console.error('Failed to cancel order:', error);
-        }
+const toggleReviewForm = (itemId) => {
+    if (reviewingItemId.value === itemId) {
+        reviewingItemId.value = null;
+    } else {
+        reviewingItemId.value = itemId;
+        newReview.value.rating = 5;
+        newReview.value.comment = '';
     }
 };
 
-const reOrder = async (oldOrder) => {
-    if (!user.value) return alert('Vui lòng đăng nhập!');
+// >> SỬA LỖI: Thêm orderId khi gửi đánh giá
+const submitReview = async (item, orderId) => {
+    if (!newReview.value.comment.trim()) {
+        toast.warn("Vui lòng nhập bình luận của bạn.");
+        return;
+    }
 
-    if (confirm('Bạn có muốn đặt lại đơn hàng này với thông tin và sản phẩm tương tự?')) {
-        const newOrder = {
+    try {
+        const reviewData = {
+            fullname: user.value.fullname,
+            productId: item.id,
             userId: user.value.id,
-            customerName: oldOrder.customerName,
-            customerAddress: oldOrder.customerAddress,
-            customerPhone: oldOrder.customerPhone,
-            items: oldOrder.items,
-            total: oldOrder.total, 
-            status: 'Chờ xác nhận', 
-            createdAt: new Date().toISOString() 
+            orderId: orderId, // << Thêm orderId vào dữ liệu
+            rating: newReview.value.rating,
+            comment: newReview.value.comment,
+            createdAt: new Date().toISOString()
         };
+        const response = await axios.post('http://localhost:3000/reviews', reviewData);
 
-        try {
-            const response = await fetch('http://localhost:3000/orders', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newOrder)
-            });
+        userReviews.value.push(response.data);
+        reviewingItemId.value = null;
+        toast.success("Cảm ơn bạn đã đánh giá sản phẩm!");
 
-            if (response.ok) {
-                const createdOrder = await response.json();
-                orders.value.unshift(createdOrder);
-                alert('Đã đặt lại đơn hàng thành công! Đơn hàng mới đang chờ được xác nhận.');
-            } else {
-                alert('Đặt lại đơn hàng thất bại. Vui lòng thử lại.');
+    } catch (error) {
+        console.error("Lỗi khi gửi đánh giá:", error);
+        toast.error("Đã xảy ra lỗi, vui lòng thử lại.");
+    }
+};
+
+// >> NÂNG CẤP: Hoàn kho khi người dùng hủy đơn
+const restoreStock = async (items) => {
+    try {
+        const stockUpdates = items.map(async (item) => {
+            const { data: product } = await axios.get(`http://localhost:3000/products/${item.id}`);
+            const newQuantity = product.quantity + item.quantity;
+            return axios.patch(`http://localhost:3000/products/${item.id}`, { quantity: newQuantity });
+        });
+        await Promise.all(stockUpdates);
+    } catch (error) {
+        console.error("Lỗi khi hoàn kho:", error);
+    }
+};
+
+const cancelOrder = async (order) => {
+    Swal.fire({
+        title: 'Bạn chắc chắn muốn hủy?',
+        text: "Bạn không thể hoàn tác hành động này!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Đồng ý hủy!',
+        cancelButtonText: 'Không'
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            try {
+                // Hoàn lại số lượng sản phẩm
+                await restoreStock(order.items);
+                
+                // Cập nhật trạng thái đơn hàng
+                await axios.patch(`http://localhost:3000/orders/${order.id}`, { status: 'Đã hủy' });
+                
+                const orderInList = orders.value.find(o => o.id === order.id);
+                if (orderInList) orderInList.status = 'Đã hủy';
+                
+                Swal.fire(
+                    'Đã hủy!',
+                    'Đơn hàng của bạn đã được hủy thành công.',
+                    'success'
+                )
+            } catch (error) {
+                console.error('Failed to cancel order:', error);
+                Swal.fire(
+                    'Thất bại!',
+                    'Đã có lỗi xảy ra, vui lòng thử lại.',
+                    'error'
+                )
             }
-        } catch (error) {
-            console.error('Failed to re-order:', error);
-            alert('Có lỗi xảy ra khi đặt lại đơn hàng.');
         }
+    })
+};
+
+
+const buyAgain = async (order) => {
+    if (!order || !order.items || order.items.length === 0) {
+        toast.warn('Đơn hàng này không có sản phẩm để mua lại.');
+        return;
+    }
+    try {
+        const addToCartPromises = order.items.map(item => {
+            // Lấy thông tin mới nhất của sản phẩm để đảm bảo không bị lỗi thời
+            return store.dispatch('cart/addProductToCart', { ...item });
+        });
+
+        await Promise.all(addToCartPromises);
+        toast.success("Đã thêm các sản phẩm vào giỏ hàng!");
+        router.push('/cart');
+    } catch (error) {
+        console.error('Đã xảy ra lỗi khi thực hiện mua lại:', error);
+        toast.error('Đã xảy ra lỗi, vui lòng thử lại sau.');
     }
 };
 </script>
@@ -98,24 +179,58 @@ const reOrder = async (oldOrder) => {
                     </div>
                     <span class="status" :class="{
                         'status-success': order.status === 'Đã giao',
-                        'status-pending': order.status === 'Đang giao' || order.status === 'Chờ xác nhận',
-                        'status-cancel': order.status === 'Đã hủy'
+                        'status-shipping': order.status === 'Đang giao',
+                        'status-pending': order.status === 'Chờ xác nhận',
+                        'status-cancel': order.status === 'Đã hủy' || order.status === 'Thanh toán thất bại'
                     }">{{ order.status }}</span>
                 </div>
 
                 <div class="order-products">
-                    <div v-for="item in order.items" :key="item.id" class="product-item">
-                        <img :src="item.image?.[0] || 'https://via.placeholder.com/100x100?text=No+Image'"
-                            alt="product image" class="product-image" />
-                        <div class="product-info">
-                            <h6 class="product-name">{{ item.name }}</h6>
-                            <p class="product-desc text-muted">{{ item.description?.slice(0, 60) }}...</p>
-                            <p class="product-meta">
-                                Số lượng: {{ item.quantity }} |
-                                Giá: <span class="text-danger fw-bold">
-                                    {{ item.discount?.toLocaleString('vi-VN') }}₫
-                                </span>
-                            </p>
+                    <div v-for="item in order.items" :key="item.id" class="product-item-wrapper">
+                        <div class="product-item">
+                            <img :src="item.image?.[0] || 'https://via.placeholder.com/100x100?text=No+Image'"
+                                alt="product image" class="product-image" />
+                            <div class="product-info">
+                                <h6 class="product-name">{{ item.name }}</h6>
+                                <p class="product-meta">
+                                    Số lượng: {{ item.quantity }} |
+                                    Giá: <span class="text-danger fw-bold">
+                                        {{ (item.discount || item.price)?.toLocaleString('vi-VN') }}₫
+                                    </span>
+                                </p>
+                                <div v-if="order.status === 'Đã giao'" class="mt-2">
+                                     <button v-if="!hasUserReviewed(item.id, order.id)" @click="toggleReviewForm(item.id + order.id)" class="btn btn-review">
+                                        <i class="fas fa-star me-1"></i> {{ reviewingItemId === (item.id + order.id) ? 'Đóng lại' : 'Viết đánh giá' }}
+                                    </button>
+                                    <span v-else class="text-success reviewed-badge">
+                                        <i class="fas fa-check-circle me-1"></i> Đã đánh giá
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div v-if="reviewingItemId === (item.id + order.id)" class="review-form-container">
+                            <form @submit.prevent="submitReview(item, order.id)">
+                                <div class="mb-2">
+                                    <label class="form-label">Xếp hạng:</label>
+                                    <div>
+                                        <select v-model.number="newReview.rating"
+                                            class="form-select form-select-sm w-auto">
+                                            <option value="5">5 sao ★★★★★</option>
+                                            <option value="4">4 sao ★★★★☆</option>
+                                            <option value="3">3 sao ★★★☆☆</option>
+                                            <option value="2">2 sao ★★☆☆☆</option>
+                                            <option value="1">1 sao ★☆☆☆☆</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label">Bình luận:</label>
+                                    <textarea v-model="newReview.comment" class="form-control form-control-sm" rows="3"
+                                        placeholder="Sản phẩm này tuyệt vời như thế nào..."></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-sm">Gửi đánh giá</button>
+                            </form>
                         </div>
                     </div>
                 </div>
@@ -128,11 +243,10 @@ const reOrder = async (oldOrder) => {
                         </p>
                     </div>
                     <div class="order-actions">
-                        <button v-if="order.status === 'Chờ xác nhận'" @click="cancelOrder(order.id)"
-                            class="btn btn-cancel">
+                         <button v-if="order.status === 'Chờ xác nhận'" @click="cancelOrder(order)" class="btn btn-cancel">
                             <i class="fas fa-times me-1"></i> Hủy đơn
                         </button>
-                        <button v-if="order.status === 'Đã hủy' || order.status === 'Đã giao'" @click="reOrder(order)"
+                        <button v-if="order.status === 'Đã hủy' || order.status === 'Đã giao'" @click="buyAgain(order)"
                             class="btn btn-reorder">
                             <i class="fas fa-redo me-1"></i> Mua lại
                         </button>
@@ -158,7 +272,6 @@ const reOrder = async (oldOrder) => {
     color: #1a1a1a;
 }
 
-/* Empty states */
 .no-user,
 .no-orders {
     text-align: center;
@@ -172,7 +285,7 @@ const reOrder = async (oldOrder) => {
 .btn-shop {
     display: inline-block;
     margin-top: 15px;
-    background: #007bff;
+    background: #000;
     color: white;
     padding: 10px 18px;
     border-radius: 10px;
@@ -181,10 +294,9 @@ const reOrder = async (oldOrder) => {
 }
 
 .btn-shop:hover {
-    background: #0056b3;
+    background: #333;
 }
 
-/* Order card */
 .order-card {
     background: #fff;
     border-radius: 14px;
@@ -198,7 +310,6 @@ const reOrder = async (oldOrder) => {
     transform: translateY(-3px);
 }
 
-/* Header */
 .order-header {
     display: flex;
     justify-content: space-between;
@@ -229,7 +340,10 @@ const reOrder = async (oldOrder) => {
     background: #e8f9f1;
     color: #1e8a47;
 }
-
+.status-shipping {
+    background: #e6f7ff;
+    color: #006fbb;
+}
 .status-pending {
     background: #fff6e5;
     color: #d18b00;
@@ -240,7 +354,6 @@ const reOrder = async (oldOrder) => {
     color: #c0392b;
 }
 
-/* Product list */
 .order-products {
     padding: 15px 20px;
     display: flex;
@@ -283,7 +396,6 @@ const reOrder = async (oldOrder) => {
     color: #777;
 }
 
-/* Footer */
 .order-footer {
     background: #fafafa;
     border-top: 1px solid #eee;
@@ -304,6 +416,7 @@ const reOrder = async (oldOrder) => {
     cursor: pointer;
     font-size: 14px;
     transition: all 0.2s;
+    font-weight: 600;
 }
 
 .btn-cancel {
@@ -324,11 +437,49 @@ const reOrder = async (oldOrder) => {
     background: #d4e3ff;
 }
 
+.btn-review {
+    background-color: #ffc107;
+    color: #212529;
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-weight: 600;
+}
+
+.btn-review:hover {
+    background-color: #e0a800;
+}
+
 @media (max-width: 600px) {
     .order-footer {
         flex-direction: column;
         align-items: flex-start;
         gap: 10px;
     }
+}
+
+.product-item-wrapper {
+    padding-bottom: 15px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.product-item-wrapper:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.review-form-container {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 15px;
+    border: 1px solid #dee2e6;
+}
+
+.reviewed-badge {
+    font-weight: 600;
+    padding: 6px 10px;
+    border-radius: 6px;
+    background-color: #e8f9f1;
 }
 </style>

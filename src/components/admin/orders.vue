@@ -23,9 +23,40 @@ const fetchOrders = async () => {
 
 onMounted(fetchOrders);
 
+const restoreStock = async (items) => {
+    try {
+        const stockUpdates = items.map(async (item) => {
+            const { data: product } = await axios.get(`http://localhost:3000/products/${item.id}`);
+            const newQuantity = product.quantity + item.quantity;
+            return axios.patch(`http://localhost:3000/products/${item.id}`, {
+                quantity: newQuantity
+            });
+        });
+        await Promise.all(stockUpdates);
+        return true;
+    } catch (error) {
+        console.error("Lỗi khi hoàn kho:", error);
+        return false;
+    }
+};
+
 // Cập nhật trạng thái đơn hàng
 const updateStatus = async (order, newStatus) => {
     try {
+        // >> SỬA LỖI: Chỉ hoàn kho khi hủy đơn ở trạng thái phù hợp
+        if (newStatus === 'Đã hủy' && (order.status === 'Chờ xác nhận' || order.status === 'Đang giao')) {
+            const stockRestored = await restoreStock(order.items);
+            if (!stockRestored) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Hoàn kho thất bại!',
+                    text: 'Không thể cập nhật trạng thái do lỗi hoàn kho.',
+                    confirmButtonColor: '#000'
+                });
+                return;
+            }
+        }
+
         await axios.patch(`http://localhost:3000/orders/${order.id}`, { status: newStatus });
         order.status = newStatus;
 
@@ -48,10 +79,10 @@ const updateStatus = async (order, newStatus) => {
 };
 
 // Xóa đơn hàng
-const deleteOrder = async (orderId) => {
+const deleteOrder = async (order) => {
     Swal.fire({
         title: 'Xác nhận xoá?',
-        text: 'Bạn có chắc chắn muốn XÓA vĩnh viễn đơn hàng này không?',
+        text: 'Bạn có chắc chắn muốn XÓA vĩnh viễn đơn hàng này không? Hành động này không thể hoàn tác.',
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#d33',
@@ -61,12 +92,17 @@ const deleteOrder = async (orderId) => {
     }).then(async (result) => {
         if (result.isConfirmed) {
             try {
-                await axios.delete(`http://localhost:3000/orders/${orderId}`);
-                orders.value = orders.value.filter(order => order.id !== orderId);
+                // >> SỬA LỖI: Chỉ hoàn kho khi xóa đơn ở trạng thái phù hợp
+                if (order.status === 'Chờ xác nhận' || order.status === 'Đang giao') {
+                    await restoreStock(order.items);
+                }
+
+                await axios.delete(`http://localhost:3000/orders/${order.id}`);
+                orders.value = orders.value.filter(o => o.id !== order.id);
                 Swal.fire({
                     icon: 'success',
                     title: 'Đã xoá!',
-                    text: `Đơn hàng #${orderId} đã được xoá thành công.`,
+                    text: `Đơn hàng #${order.id} đã được xoá thành công.`,
                     showConfirmButton: false,
                     timer: 1500
                 });
@@ -83,7 +119,6 @@ const deleteOrder = async (orderId) => {
     });
 };
 
-// Xem chi tiết
 const showOrderDetails = (order) => {
     selectedOrder.value = order;
 };
@@ -122,19 +157,21 @@ const showOrderDetails = (order) => {
                             <small class="text-muted">{{ order.customerInfo?.phone || order.customerPhone }}</small>
                         </td>
                         <td>
-                            <small class="text-muted">{{ order.customerInfo?.address || order.customerAddress }}</small>
+                            <small class="text-muted">{{ order.customerInfo?.address || order.customerAddress
+                                }}</small>
                         </td>
                         <td class="text-danger fw-semibold">{{ order.total.toLocaleString('vi-VN') }} ₫</td>
                         <td>
                             <span v-if="order.paymentMethod === 'cod'" class="badge bg-info text-dark">COD</span>
-                            <span v-else-if="order.paymentMethod === 'vnpay'" class="badge bg-warning text-dark">VNPay</span>
+                            <span v-else-if="order.paymentMethod === 'vnpay'"
+                                class="badge bg-primary">VNPay</span>
                         </td>
                         <td>
                             <small class="text-muted">{{ new Date(order.createdAt).toLocaleString('vi-VN') }}</small>
                         </td>
                         <td>
                             <span class="badge" :class="{
-                                'bg-success': order.status === 'Đã giao' || order.status === 'Đã thanh toán',
+                                'bg-success': order.status === 'Đã giao',
                                 'bg-primary': order.status === 'Đang giao',
                                 'bg-warning text-dark': order.status === 'Chờ xác nhận' || order.status === 'Chờ thanh toán',
                                 'bg-danger': order.status === 'Thanh toán thất bại',
@@ -149,10 +186,13 @@ const showOrderDetails = (order) => {
                                     data-bs-target="#orderDetailsModal" @click="showOrderDetails(order)">
                                     Chi tiết
                                 </button>
-                                <button @click="updateStatus(order, 'Đang giao')" class="btn btn-sm btn-outline-primary">Giao hàng</button>
-                                <button @click="updateStatus(order, 'Đã giao')" class="btn btn-sm btn-outline-success">Hoàn thành</button>
-                                <button @click="updateStatus(order, 'Đã hủy')" class="btn btn-sm btn-outline-secondary">Hủy</button>
-                                <button @click="deleteOrder(order.id)" class="btn btn-sm btn-outline-danger">Xóa</button>
+                                <button @click="updateStatus(order, 'Đang giao')"
+                                    class="btn btn-sm btn-outline-primary">Giao hàng</button>
+                                <button @click="updateStatus(order, 'Đã giao')"
+                                    class="btn btn-sm btn-outline-success">Hoàn thành</button>
+                                <button @click="updateStatus(order, 'Đã hủy')"
+                                    class="btn btn-sm btn-outline-secondary">Hủy</button>
+                                <button @click="deleteOrder(order)" class="btn btn-sm btn-outline-danger">Xóa</button>
                             </div>
                         </td>
                     </tr>
@@ -160,34 +200,43 @@ const showOrderDetails = (order) => {
             </table>
         </div>
 
-        <!-- Modal chi tiết đơn hàng -->
-        <div class="modal fade" id="orderDetailsModal" tabindex="-1" aria-labelledby="orderDetailsModalLabel" aria-hidden="true">
+        <div class="modal fade" id="orderDetailsModal" tabindex="-1" aria-labelledby="orderDetailsModalLabel"
+            aria-hidden="true">
             <div class="modal-dialog modal-lg modal-dialog-centered">
                 <div class="modal-content" v-if="selectedOrder">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="orderDetailsModalLabel">Chi tiết đơn hàng #{{ selectedOrder.id }}</h5>
+                        <h5 class="modal-title" id="orderDetailsModalLabel">Chi tiết đơn hàng #{{ selectedOrder.id }}
+                        </h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <h6><strong>Thông tin khách hàng</strong></h6>
-                                <p class="mb-1"><strong>Tên:</strong> {{ selectedOrder.customerInfo?.name || selectedOrder.customerName }}</p>
-                                <p class="mb-1"><strong>SĐT:</strong> {{ selectedOrder.customerInfo?.phone || selectedOrder.customerPhone }}</p>
-                                <p class="mb-1"><strong>Địa chỉ:</strong> {{ selectedOrder.customerInfo?.address || selectedOrder.customerAddress }}</p>
-                                <p v-if="selectedOrder.customerInfo?.note" class="mb-0"><strong>Ghi chú:</strong> <em>{{ selectedOrder.customerInfo.note }}</em></p>
+                                <p class="mb-1"><strong>Tên:</strong> {{ selectedOrder.customerInfo?.name ||
+                                    selectedOrder.customerName }}</p>
+                                <p class="mb-1"><strong>SĐT:</strong> {{ selectedOrder.customerInfo?.phone ||
+                                    selectedOrder.customerPhone }}</p>
+                                <p class="mb-1"><strong>Địa chỉ:</strong> {{ selectedOrder.customerInfo?.address ||
+                                    selectedOrder.customerAddress }}</p>
+                                <p v-if="selectedOrder.customerInfo?.note" class="mb-0"><strong>Ghi chú:</strong>
+                                    <em>{{ selectedOrder.customerInfo.note }}</em></p>
                             </div>
                             <div class="col-md-6">
                                 <h6><strong>Thông tin thanh toán</strong></h6>
-                                <p class="mb-1"><strong>Tạm tính:</strong> {{ selectedOrder.subtotal.toLocaleString('vi-VN') }} ₫</p>
-                                <p class="mb-1"><strong>Phí vận chuyển:</strong> {{ selectedOrder.shippingFee.toLocaleString('vi-VN') }} ₫</p>
-                                <p class="mb-1 text-success" v-if="selectedOrder.discount && selectedOrder.discount.amount > 0">
+                                <p class="mb-1"><strong>Tạm tính:</strong> {{
+                                    selectedOrder.subtotal.toLocaleString('vi-VN') }} ₫</p>
+                                <p class="mb-1"><strong>Phí vận chuyển:</strong> {{
+                                    selectedOrder.shippingFee.toLocaleString('vi-VN') }} ₫</p>
+                                <p class="mb-1 text-success"
+                                    v-if="selectedOrder.discount && selectedOrder.discount.amount > 0">
                                     <strong>Giảm giá ({{ selectedOrder.discount.code }}):</strong>
                                     -{{ selectedOrder.discount.amount.toLocaleString('vi-VN') }} ₫
                                 </p>
                                 <hr class="my-2">
                                 <p class="mb-1 fw-bold"><strong>Tổng cộng:</strong>
-                                    <span class="text-danger fs-5">{{ selectedOrder.total.toLocaleString('vi-VN') }} ₫</span>
+                                    <span class="text-danger fs-5">{{ selectedOrder.total.toLocaleString('vi-VN')
+                                        }} ₫</span>
                                 </p>
                             </div>
                         </div>
@@ -196,12 +245,15 @@ const showOrderDetails = (order) => {
                         <ul class="list-group">
                             <li v-for="item in selectedOrder.items" :key="item.id"
                                 class="list-group-item d-flex align-items-center">
-                                <img :src="item.image[0]" class="rounded me-3" style="width: 50px; height: 50px; object-fit: cover;">
+                                <img :src="item.image[0]" class="rounded me-3"
+                                    style="width: 50px; height: 50px; object-fit: cover;">
                                 <div class="flex-grow-1">
                                     <div class="fw-semibold small">{{ item.name }}</div>
-                                    <small class="text-muted">SL: {{ item.quantity }} x {{ item.discount.toLocaleString('vi-VN') }} ₫</small>
+                                    <small class="text-muted">SL: {{ item.quantity }} x {{
+                                        item.discount.toLocaleString('vi-VN') }} ₫</small>
                                 </div>
-                                <span class="fw-semibold small">{{ (item.quantity * item.discount).toLocaleString('vi-VN') }} ₫</span>
+                                <span class="fw-semibold small">{{ (item.quantity *
+                                    item.discount).toLocaleString('vi-VN') }} ₫</span>
                             </li>
                         </ul>
                     </div>

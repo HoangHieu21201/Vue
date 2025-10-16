@@ -4,11 +4,8 @@ import axios from 'axios'
 import { useStore } from 'vuex'
 import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification';
-import { toast } from "vue3-toastify";
-
 
 const Toast = useToast();
-
 const store = useStore()
 const router = useRouter()
 const category = ref([])
@@ -20,7 +17,8 @@ const wishlistItems = ref([]);
 const selectedCategoryId = ref(null);
 
 const addToCart = (product) => {
-  store.dispatch('cart/addToCart', product);
+  product.quantity = 1;
+  store.dispatch('cart/addProductToCart', product);
   Toast.success('Đã thêm sản phẩm vào giỏ hàng!');
 };
 
@@ -85,10 +83,11 @@ const toggleWishlist = async (product) => {
       message = 'Đã thêm vào danh sách yêu thích';
     }
 
-    Toast(message);
+    Toast.success(message);
     await fetchWishlist();
 
   } catch (error) {
+    Toast.error('Có lỗi xảy ra, vui lòng thử lại.');
     console.error('Lỗi khi cập nhật danh sách yêu thích:', error);
   }
 };
@@ -282,13 +281,17 @@ watch(sortOption, () => {
                 </div>
               </router-link>
               <div class="card-footer bg-transparent border-0 d-flex justify-content-center gap-2 pb-3">
-                <div class="card-footer bg-transparent border-0 d-flex justify-content-center gap-2 pb-3">
-                  <button class="btn px-4 py-2" @click="toggleWishlist(item)"
-                    :class="isInWishlist(item.id) ? 'btn-danger' : 'btn-outline-danger'">
-                    <i class="fa me-2" :class="isInWishlist(item.id) ? 'fa-heart-crack' : 'fa-heart'"></i>
-                    {{ isInWishlist(item.id) ? 'Bỏ yêu thích' : 'Yêu thích' }}
+                <button class="btn px-3" @click="toggleWishlist(item)"
+                  :class="isInWishlist(item.id) ? 'btn-danger' : 'btn-outline-danger'">
+                  <i class="fa" :class="isInWishlist(item.id) ? 'fa-heart-crack' : 'fa-heart'"></i>
+                </button>
+                <!-- hết hàng thì không mua được -->
+                <span v-if="item.quantity === 0" class="btn btn-secondary px-4">Hết hàng</span>
+                <span v-else>
+                  <button @click="addToCart(item)" class="btn btn-outline-success px-4">
+                    <i class="fa fa-shopping-cart me-2"></i>Mua
                   </button>
-                </div>
+                </span>
               </div>
             </div>
           </div>

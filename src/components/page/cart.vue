@@ -18,7 +18,6 @@ const increase = (item) => {
     store.dispatch('cart/increaseQuantity', item.id);
 };
 
-// Xoá 1 sản phẩm
 const deleteCartItem = (itemId) => {
     Swal.fire({
         title: 'Xác nhận xoá sản phẩm?',
@@ -43,7 +42,6 @@ const deleteCartItem = (itemId) => {
     });
 };
 
-// Xoá toàn bộ giỏ hàng
 const deleteAllCart = () => {
     Swal.fire({
         title: 'Xoá toàn bộ giỏ hàng?',

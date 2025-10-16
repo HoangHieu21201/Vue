@@ -3,51 +3,68 @@ import { ref } from 'vue'
 import axios from 'axios'
 import Swal from 'sweetalert2'
 
+// Khởi tạo form mặc định
 const form = ref({
     fullname: "",
     email: "",
     password: "",
     phone: "",
     address: "",
+    status: "active",
     role: "user"
 })
 
+// Gửi form đăng ký
 const handleSubmit = async () => {
-    let users = JSON.parse(localStorage.getItem("users")) || []
-
-    if (users.some(u => u.email === form.value.email)) {
-        Swal.fire({
-            icon: 'error',
-            title: 'Email has been registered!',
-            text: 'Please use another email',
-            confirmButtonColor: '#000'
-        })
-        return
-    }
-
     try {
-        const res = await axios.post("http://localhost:3000/user", form.value)
+        // 🟢 Kiểm tra email trùng trong API db.json
+        const checkEmail = await axios.get(`http://localhost:3000/user?email=${form.value.email}`);
+        if (checkEmail.data.length > 0) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Email đã được đăng ký!',
+                text: 'Vui lòng dùng email khác.',
+                confirmButtonColor: '#000'
+            });
+            return;
+        }
+
+        // 🟢 Nếu chưa trùng → tiến hành tạo tài khoản
+        const res = await axios.post("http://localhost:3000/user", form.value);
+
         if (res.status === 201) {
-            users.push(form.value)
-            localStorage.setItem("users", JSON.stringify(users))
             Swal.fire({
                 icon: 'success',
-                title: 'Tài khoản đã được tạo thành công',
-                text: 'Tài khoản của bạn đã được tạo!',
+                title: 'Tài khoản đã được tạo thành công!',
+                text: 'Bạn có thể đăng nhập ngay bây giờ.',
                 showConfirmButton: true,
                 confirmButtonText: 'Đi đến Đăng nhập',
                 confirmButtonColor: '#000'
             }).then(() => {
-                window.location.href = '/login'
-            })
-            form.value = { fullname: "", email: "", password: "", phone: "", status: "active", address: "", role: "user" }
+                window.location.href = '/login';
+            });
+
+            // Reset form
+            form.value = {
+                fullname: "",
+                email: "",
+                password: "",
+                phone: "",
+                address: "",
+                status: "active",
+                role: "user"
+            };
         }
     } catch (err) {
-        console.error("Err: ", err)
-        isMessage.value = "Lỗi kết nối đến máy chủ!"
-        isSuccess.value = false
+        console.error("Lỗi khi đăng ký: ", err);
+        Swal.fire({
+            icon: 'error',
+            title: 'Lỗi máy chủ!',
+            text: 'Không thể kết nối tới server.',
+            confirmButtonColor: '#000'
+        });
     }
-}
+};
 </script>
 
 <template>
@@ -92,10 +109,11 @@ const handleSubmit = async () => {
                         placeholder="Enter your password" required />
                 </div>
 
+                <!-- Re-enter Password -->
                 <div class="mb-3">
-                    <label for="password" class="form-label">Re-enter Password</label>
-                    <input type="password" class="form-control" id="password" v-model="password"
-                        placeholder="Enter your password" required />
+                    <label for="repassword" class="form-label fw-semibold text-dark">Re-enter Password</label>
+                    <input type="password" id="repassword" class="form-control border-dark-subtle"
+                        placeholder="Re-enter your password" required />
                 </div>
 
                 <!-- Submit -->

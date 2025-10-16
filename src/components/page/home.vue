@@ -7,9 +7,7 @@ const products = ref([])
 const coupons = ref([])
 
 const API = import.meta.env.VITE_URL_API || 'http://localhost:3000';
-// onMounted(async () => {
-//   Loadulieu()
-// })
+
 
 
 const scrollContainer = ref(null)
@@ -147,7 +145,7 @@ onMounted(() => {
                 <p class="fw-bold mb-2">{{ Number(item.price).toLocaleString('vi-VN') }} ₫</p>
               </template>
 
-              <button class="btn btn-dark btn-sm mt-1">Xem chi tiết</button>
+              <button class="btn btn-dark btn-sm mt-1">XEM NGAY</button>
             </div>
           </router-link>
         </div>

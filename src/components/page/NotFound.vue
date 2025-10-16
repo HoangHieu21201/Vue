@@ -1,8 +1,8 @@
 <template>
     <div class="notfound d-flex flex-column justify-content-center align-items-center text-center">
-        <h1 class="display-1 fw-bold text-dark glitch">Lỗiiiiiiiiiiiiiiiiiii</h1>
+        <h1 class="display-1 fw-bold text-dark glitch">Lỗi rồi tình yêu</h1>
         <p class="lead text-secondary mb-4">
-           Trang bạn đang tìm kiếm không tồn tại hoặc đã được di chuyển 🕵️‍♂️
+           Trang bạn đang tìm kiếm không tồn tại hoặc đã được di chuyển hẹ hẹ!
         </p>
         <router-link to="/" class="btn btn-dark px-4 py-2 rounded-pill fw-semibold">
             Về trang chủ

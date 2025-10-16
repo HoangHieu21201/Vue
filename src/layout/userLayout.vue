@@ -46,8 +46,8 @@ onMounted(() => {
 <template>
   <header>
     <nav class="navbar navbar-expand-lg shadow-sm sticky-top custom-navbar">
-      <div class="container">
-        <router-link class="navbar-brand d-flex align-items-center" to="/">
+      <div class="container" >
+        <router-link  class="navbar-brand d-flex align-items-center" to="/">
           <img src="https://figurecollector.io.vn/wp-content/uploads/2025/09/logofigure.png" alt="logo" width="220"
             class="me-2" />
         </router-link>
@@ -58,21 +58,22 @@ onMounted(() => {
 
         <div class="collapse navbar-collapse" id="navbarNav">
           <ul class="navbar-nav mx-auto text-center gap-lg-4">
-            <li class="nav-item">
+            <li class="nav-item ">
               <router-link class="nav-link" to="/">Trang chủ </router-link>
             </li>
-            <li class="nav-item">
-              <router-link class="nav-link" to="/shop">Cửa hàng</router-link>
+            <li class="nav-item ">
+              <router-link active-class="active-link" class="nav-link" to="/shop">Cửa hàng</router-link>
             </li>
-            <li class="nav-item">
-              <router-link class="nav-link" to="/about">About</router-link>
+            <li class="nav-item ">
+              <router-link active-class="active-link" class="nav-link" to="/about">About</router-link>
             </li>
-            <li class="nav-item">
-              <router-link class="nav-link" to="/profile">Hồ sơ</router-link>
+            <li class="nav-item ">
+              <router-link active-class="active-link" class="nav-link" to="/profile">Hồ sơ</router-link>
             </li>
-            <li>
-              <router-link to="/wishlist" class="nav-link">
+            <li class="nav-item ">
+              <router-link active-class="active-link" to="/wishlist" class="nav-link">
                 Yêu thích
+                <i class="fa fa-heart ms-1" style="color: red;"></i>
               </router-link>
             </li>
           </ul>
@@ -176,6 +177,11 @@ onMounted(() => {
 </template>
 
 <style scoped>
+.active-link {
+  font-weight: 600;
+  color: #000 !important;
+  text-decoration: underline coral;
+}
 /* ===== BACK TO TOP ===== */
 .back-to-top {
   position: fixed;

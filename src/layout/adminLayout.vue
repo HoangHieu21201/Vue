@@ -3,7 +3,7 @@
         <div class="d-flex flex-grow-1">
             <!-- Sidebar -->
             <aside class="sidebar bg-dark text-white p-3">
-                <router-link class="navbar-brand d-flex align-items-center" to="/">
+                <router-link class="navbar-brand d-flex align-items-center" to="/admin/dashboard">
                     <img src="../assets/logovuong.jpg" alt="" width="30" style="border-radius: 50px; margin-right: 10px; margin-bottom: 10px;">
                     <span>figurecollector</span>
                 </router-link>
