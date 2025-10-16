@@ -142,19 +142,12 @@ onMounted(readUser)
                 </td>
                 <td class="text-center">
                   <button class="btn btn-sm btn-primary me-2" @click="editUser(user)">Sửa</button>
-                  <button
-                    class="btn btn-sm me-2"
-                    :class="user.status === 'active' ? 'btn-warning' : 'btn-info'"
-                    @click="toggleUserStatus(user)"
-                    :disabled="user.id === loggedInUser?.id"
-                  >
+                  <button class="btn btn-sm me-2" :class="user.status === 'active' ? 'btn-warning' : 'btn-info'"
+                    @click="toggleUserStatus(user)" :disabled="user.id === loggedInUser?.id">
                     {{ user.status === 'active' ? 'Vô hiệu hoá' : 'Kích hoạt' }}
                   </button>
-                  <button
-                    class="btn btn-sm btn-danger"
-                    @click="removeUser(user.id)"
-                    :disabled="user.id === loggedInUser?.id"
-                  >
+                  <button class="btn btn-sm btn-danger" @click="removeUser(user.id)"
+                    :disabled="user.id === loggedInUser?.id">
                     Xoá
                   </button>
                 </td>
@@ -164,51 +157,53 @@ onMounted(readUser)
         </div>
       </div>
     </div>
-    
-          <div class="col">
-            <form @submit.prevent="submitForm" class="bg-white p-4 rounded shadow-sm">
-              <h5 class="mb-3 fw-bold">{{ isEditing ? 'Chỉnh sửa người dùng' : 'Thêm người dùng mới' }}</h5>
-              <div class="row g-3">
-                <div class="col-12">
-                  <label class="form-label">Họ và tên</label>
-                  <input v-model="formUser.fullname" type="text" class="form-control" placeholder="Nhập họ tên" required />
-                </div>
-                <div class="col-12">
-                  <label class="form-label">Email</label>
-                  <input v-model="formUser.email" type="email" class="form-control" placeholder="Nhập email" required :disabled="isEditing" />
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Số điện thoại</label>
-                  <input v-model="formUser.phone" type="text" class="form-control" placeholder="Nhập SĐT" />
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Địa chỉ</label>
-                  <input v-model="formUser.address" type="text" class="form-control" placeholder="Nhập địa chỉ" />
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Mật khẩu</label>
-                  <input v-model="formUser.password" type="password" class="form-control" placeholder="Để trống nếu không đổi" />
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Quyền</label>
-                  <select class="form-select" v-model="formUser.role" required>
-                    <option disabled value="">-- Chọn quyền --</option>
-                    <option value="user">User</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                </div>
-              </div>
-              <div class="mt-4">
-                <button type="submit" class="btn btn-dark px-4 me-2">
-                  {{ isEditing ? 'Lưu thay đổi' : 'Thêm người dùng' }}
-                </button>
-                <button type="button" class="btn btn-outline-secondary px-4" @click="resetForm">
-                  Huỷ
-                </button>
-              </div>
-            </form>
+
+    <div class="col">
+      <form @submit.prevent="submitForm" class="bg-white p-4 rounded shadow-sm">
+        <h5 class="mb-3 fw-bold">{{ isEditing ? 'Chỉnh sửa người dùng' : 'Thêm người dùng mới' }}</h5>
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label">Họ và tên</label>
+            <input v-model="formUser.fullname" type="text" class="form-control" placeholder="Nhập họ tên" required />
+          </div>
+          <div class="col-12">
+            <label class="form-label">Email</label>
+            <input v-model="formUser.email" type="email" class="form-control" placeholder="Nhập email" required
+              :disabled="isEditing" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Số điện thoại</label>
+            <input v-model="formUser.phone" type="text" class="form-control" placeholder="Nhập SĐT" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Địa chỉ</label>
+            <input v-model="formUser.address" type="text" class="form-control" placeholder="Nhập địa chỉ" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Mật khẩu</label>
+            <input v-model="formUser.password" type="password" class="form-control"
+              placeholder="Để trống nếu không đổi" />
+          </div>
+          <div v-if="!isEditing || (isEditing && formUser.id !== loggedInUser?.id)" class="col-md-6">
+            <label class="form-label">Quyền</label>
+            <select class="form-select" v-model="formUser.role" required>
+              <option disabled value="">-- Chọn quyền --</option>
+              <option value="user">User</option>
+              <option value="admin">Admin</option>
+            </select>
           </div>
         </div>
+        <div class="mt-4">
+          <button type="submit" class="btn btn-dark px-4 me-2">
+            {{ isEditing ? 'Lưu thay đổi' : 'Thêm người dùng' }}
+          </button>
+          <button type="button" class="btn btn-outline-secondary px-4" @click="resetForm">
+            Huỷ
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
 </template>
 
 <style scoped>

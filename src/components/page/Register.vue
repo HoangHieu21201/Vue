@@ -40,7 +40,7 @@ const handleSubmit = async () => {
             }).then(() => {
                 window.location.href = '/login'
             })
-            form.value = { fullname: "", email: "", password: "", phone: "", address: "", role: "user" }
+            form.value = { fullname: "", email: "", password: "", phone: "", status: "active", address: "", role: "user" }
         }
     } catch (err) {
         console.error("Err: ", err)

@@ -42,6 +42,13 @@ const handleLogin = () => {
             text: 'Vui lòng kiểm tra lại email và mật khẩu.',
             confirmButtonColor: '#000'
         })
+    } else if (user.status !== 'active') {
+        Swal.fire({
+            icon: 'error',
+            title: 'Tài khoản bị khóa!',
+            text: 'Vui lòng liên hệ quản trị viên để biết thêm chi tiết.',
+            confirmButtonColor: '#000'
+        })
     } else {
         Swal.fire({
             icon: 'success',

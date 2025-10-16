@@ -24,12 +24,12 @@
                         </router-link>
                     </li>
                     <li class="nav-item">
-                        <router-link to="/admin/coupons" class="nav-link text-white">
+                        <router-link to="/admin/coupons" class="nav-link text-white" active-class="active-link" >
                             <i class="fas fa-tags me-2"></i>Coupons
                         </router-link>
                     </li>
                     <li class="nav-item">
-                        <RouterLink to="/admin/orders" class="nav-link">
+                        <RouterLink to="/admin/orders" class="nav-link" active-class="active-link">
                             <i class="fas fa-receipt me-2"></i> Đơn hàng
                         </RouterLink>
                     </li>
