@@ -63,23 +63,24 @@ const actions = {
             console.error('Lỗi khi xoá sản phẩm:', err);
         }
     },
-
-    // Xóa toàn bộ giỏ hàng
-    async deleteAllCart({ commit, state }) {
-        // Create an array of delete request promises
-        const deletePromises = state.cart.map(item =>
-            axios.delete(`http://localhost:3000/cart/${item.id}`)
-        );
-
+    async deleteAllCart({ commit }) {
         try {
-            // Wait for all delete requests to settle (either succeed or fail)
-            await Promise.allSettled(deletePromises);
+            const { data: cartItems } = await axios.get('http://localhost:3000/cart');
+
+            if (cartItems.length === 0) {
+                commit('DELETE_ALL_CART');
+                return;
+            }
+
+            const deletePromises = cartItems.map(item =>
+                axios.delete(`http://localhost:3000/cart/${item.id}`)
+            );
+
+            await Promise.all(deletePromises);
+
         } catch (error) {
-            // This catch block might not be necessary with Promise.allSettled,
-            // but it's good practice to have it.
-            console.error('Lỗi khi thực hiện các yêu cầu xoá giỏ hàng:', error);
+            console.error('Lỗi khi xóa toàn bộ giỏ hàng:', error);
         } finally {
-            // **Important:** Always clear the local cart, regardless of server response.
             commit('DELETE_ALL_CART');
         }
     },

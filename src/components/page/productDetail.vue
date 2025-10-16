@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router'
-import { useStore } from 'vuex'; 
+import { useStore } from 'vuex';
 import axios from 'axios';
 import { useToast } from 'vue-toastification';
 import { toast } from "vue3-toastify";
@@ -11,7 +11,7 @@ const Toast = useToast();
 const product = ref(null)
 const route = useRoute()
 const router = useRouter()
-const store = useStore(); 
+const store = useStore();
 const categories = ref([])
 const relatedProducts = ref([])
 const isFavorited = ref(false);
@@ -186,7 +186,6 @@ watch(() => route.params.id, () => {
                         </span>
                     </div>
 
-                    <p class="text-secondary">{{ product.description }}</p>
 
                     <div class="mt-4 d-flex gap-3">
                         <button @click="addToCart" class="btn btn-dark px-4 py-2">
@@ -199,10 +198,22 @@ watch(() => route.params.id, () => {
                             {{ isFavorited ? 'Bỏ yêu thích' : 'Yêu thích' }}
                         </button>
                     </div>
+                    <div class="mt-4">
+                        <h3>Mô tả sản phẩm</h3>
+
+                        <p class="text-secondary">{{ product.description }}</p>
+                    </div>
+
                 </div>
             </div>
         </div>
-
+        <!-- bình luận -->
+        <div class="mt-5">
+            <h4 class="fw-bold mb-3 border-bottom pb-2">Bình luận</h4>
+            <div class="fb-comments" :data-href="`http://localhost:5173/productDetail/${product.id}`" data-width="100%"
+                data-numposts="5"></div>
+        </div>
+        <!-- Sản phẩm liên quan -->
         <div v-if="relatedProducts.length" class="mt-5">
             <h4 class="fw-bold mb-3 border-bottom pb-2">Sản phẩm liên quan</h4>
             <div class="related-products">

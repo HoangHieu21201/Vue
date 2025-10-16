@@ -1,14 +1,13 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue'; // THÊM 'computed' VÀO ĐÂY
-import { useStore } from 'vuex'; // THÊM DÒNG NÀY
+import { ref, onMounted, computed } from 'vue'; 
+import { useStore } from 'vuex'; 
 import { useRouter } from 'vue-router'
 import axios from 'axios';
 
 const router = useRouter()
-const store = useStore(); // THÊM DÒNG NÀY
+const store = useStore(); 
 const user = ref(null)
 
-// SỬA PHẦN NÀY: Thay thế ref và hàm fetch bằng computed property
 const cartItemCount = computed(() => store.getters['cart/cartItems'].length);
 
 onMounted(async () => {

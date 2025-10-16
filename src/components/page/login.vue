@@ -23,12 +23,12 @@ const readadmin = async () => {
 
 const handleLogin = () => {
     if (email.value === "") {
-        message.value = "Email cannot be blank";
+        message.value = "Email không được để trống";
         isSuccess.value = false;
         return;
     }
     if (password.value === "") {
-        message.value = "Password cannot be blank";
+        message.value = "Mật khẩu không được để trống";
         isSuccess.value = false;
         return;
     }
@@ -38,17 +38,17 @@ const handleLogin = () => {
     if (!user) {
         Swal.fire({
             icon: 'error',
-            title: 'Login failed!',
-            text: 'Please check your email and password again.',
+            title: 'Đăng nhập thất bại!',
+            text: 'Vui lòng kiểm tra lại email và mật khẩu.',
             confirmButtonColor: '#000'
         })
     } else {
         Swal.fire({
             icon: 'success',
-            title: 'Login Complete',
-            text: 'Your account is logged in!',
+            title: 'Đăng nhập hoàn tất',
+            text: 'Tài khoản của bạn đã được đăng nhập!',
             showConfirmButton: true,
-            confirmButtonText: 'Go to Home',
+            confirmButtonText: 'Đi đến Trang Chủ',
             confirmButtonColor: '#000'
         }).then(() => {
             window.location.href = '/'

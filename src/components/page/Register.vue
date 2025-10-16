@@ -32,10 +32,10 @@ const handleSubmit = async () => {
             localStorage.setItem("users", JSON.stringify(users))
             Swal.fire({
                 icon: 'success',
-                title: 'Account created successfully',
-                text: 'Your account has been created!',
+                title: 'Tài khoản đã được tạo thành công',
+                text: 'Tài khoản của bạn đã được tạo!',
                 showConfirmButton: true,
-                confirmButtonText: 'Go to Login',
+                confirmButtonText: 'Đi đến Đăng nhập',
                 confirmButtonColor: '#000'
             }).then(() => {
                 window.location.href = '/login'
@@ -44,7 +44,7 @@ const handleSubmit = async () => {
         }
     } catch (err) {
         console.error("Err: ", err)
-        isMessage.value = "Error connert to server!"
+        isMessage.value = "Lỗi kết nối đến máy chủ!"
         isSuccess.value = false
     }
 }

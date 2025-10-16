@@ -10,7 +10,7 @@ import { toast } from "vue3-toastify";
 const Toast = useToast();
 
 const store = useStore()
-const router = useRouter() // Khởi tạo router
+const router = useRouter()
 const category = ref([])
 const products = ref([])
 const searchQuery = ref('')
@@ -25,15 +25,14 @@ const addToCart = (product) => {
 };
 
 const getLoggedInUser = () => {
-    const user = localStorage.getItem('loggedInUser');
-    return user ? JSON.parse(user) : null;
+  const user = localStorage.getItem('loggedInUser');
+  return user ? JSON.parse(user) : null;
 };
 
-// Cập nhật fetchWishlist để lấy theo userId
 const fetchWishlist = async () => {
   const user = getLoggedInUser();
   if (!user) {
-    wishlistItems.value = []; // Nếu chưa đăng nhập, danh sách yêu thích rỗng
+    wishlistItems.value = [];
     return;
   }
   try {
@@ -41,7 +40,7 @@ const fetchWishlist = async () => {
     if (userWishlists.length > 0) {
       wishlistItems.value = userWishlists[0].products;
     } else {
-        wishlistItems.value = [];
+      wishlistItems.value = [];
     }
   } catch (err) {
     console.error('Lỗi khi tải danh sách yêu thích:', err);
@@ -49,7 +48,6 @@ const fetchWishlist = async () => {
   }
 }
 
-// Hàm isInWishlist giữ nguyên logic, nhưng giờ sẽ hoạt động với dữ liệu đúng
 const isInWishlist = (productId) => {
   return wishlistItems.value.some(item => item.id === productId);
 };
@@ -71,11 +69,9 @@ const toggleWishlist = async (product) => {
       const productIndex = userWishlist.products.findIndex(p => p.id === product.id);
 
       if (productIndex !== -1) {
-        // XÓA SẢN PHẨM
         userWishlist.products.splice(productIndex, 1);
         message = 'Đã xóa khỏi danh sách yêu thích';
       } else {
-        // THÊM SẢN PHẨM
         const { id, name, image, price, discount } = product;
         userWishlist.products.push({ id, name, image, price, discount });
         message = 'Đã thêm vào danh sách yêu thích';
@@ -83,15 +79,14 @@ const toggleWishlist = async (product) => {
 
       await axios.put(`http://localhost:3000/wishlist/${userWishlist.id}`, userWishlist);
     } else {
-      // CHƯA CÓ WISHLIST -> TẠO MỚI
       const { id, name, image, price, discount } = product;
       const newWishlist = { userId: user.id, products: [{ id, name, image, price, discount }] };
       await axios.post('http://localhost:3000/wishlist', newWishlist);
       message = 'Đã thêm vào danh sách yêu thích';
     }
 
-    Toast(message); // ✅ chỉ hiện 1 lần
-    await fetchWishlist(); // cập nhật lại giao diện
+    Toast(message);
+    await fetchWishlist();
 
   } catch (error) {
     console.error('Lỗi khi cập nhật danh sách yêu thích:', error);
@@ -99,7 +94,6 @@ const toggleWishlist = async (product) => {
 };
 
 
-// === KẾT THÚC PHẦN CODE CŨ ĐƯỢC THAY THẾ ===
 
 const readCoupons = async () => {
   try {
@@ -130,16 +124,22 @@ const readProduct = async () => {
     if (selectedCategoryId.value) {
       url.searchParams.append('categoryId', selectedCategoryId.value);
     }
-    if (searchQuery.value) {
-      url.searchParams.append('name_like', searchQuery.value);
-    }
+
     const res = await axios.get(url.toString());
-    products.value = res.data;
+    let data = res.data;
+
+    if (searchQuery.value.trim() !== '') {
+      const query = searchQuery.value.trim().toLowerCase();
+      data = data.filter(p => p.name.toLowerCase().includes(query));
+    }
+
+    products.value = data;
     sortProducts();
   } catch (err) {
     console.error('Error product:', err);
   }
 }
+
 
 const filterByCategory = (categoryId) => {
   selectedCategoryId.value = categoryId;
@@ -189,9 +189,9 @@ watch(sortOption, () => {
       <div class="col-lg-3 mb-4">
         <div class="p-3 border rounded shadow-sm bg-white">
           <h5 class="fw-bold mb-3">Tìm kiếm</h5>
-          <form class="input-group mb-3" @submit.prevent>
+          <form class="input-group mb-3" @submit.prevent="searchProduct">
             <input v-model="searchQuery" type="text" class="form-control" placeholder="Nhập tên sản phẩm..." />
-            <button type="button" class="btn btn-dark" @click="searchProduct">
+            <button type="submit" class="btn btn-primary">
               <i class="fa fa-search"></i>
             </button>
           </form>
@@ -307,6 +307,7 @@ watch(sortOption, () => {
 .sidebar-menu li a.fw-bold {
   color: #ce6b02 !important;
 }
+
 .sidebar-menu li a:hover {
   color: #000;
   font-weight: 500;
@@ -369,6 +370,7 @@ watch(sortOption, () => {
   font-size: 13px;
   color: #999;
 }
+
 .fw-bold.text-danger {
   font-size: 16px;
 }

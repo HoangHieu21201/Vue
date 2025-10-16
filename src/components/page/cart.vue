@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { useStore } from 'vuex';
 import { RouterLink } from 'vue-router';
+import Swal from 'sweetalert2';
 
 const store = useStore();
 
@@ -17,41 +18,81 @@ const increase = (item) => {
     store.dispatch('cart/increaseQuantity', item.id);
 };
 
+// Xoá 1 sản phẩm
 const deleteCartItem = (itemId) => {
-    if (confirm('Bạn có chắc chắn muốn xoá sản phẩm này không?')) {
-        store.dispatch('cart/deleteCart', itemId);
-    }
+    Swal.fire({
+        title: 'Xác nhận xoá sản phẩm?',
+        text: 'Bạn có chắc chắn muốn xoá sản phẩm này khỏi giỏ hàng?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Xoá',
+        cancelButtonText: 'Huỷ'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            store.dispatch('cart/deleteCart', itemId);
+            Swal.fire({
+                icon: 'success',
+                title: 'Đã xoá!',
+                text: 'Sản phẩm đã được xoá khỏi giỏ hàng.',
+                showConfirmButton: false,
+                timer: 1500
+            });
+        }
+    });
 };
 
+// Xoá toàn bộ giỏ hàng
 const deleteAllCart = () => {
-    if (confirm('Bạn có chắc chắn muốn xoá toàn bộ giỏ hàng không?')) {
-        store.dispatch('cart/deleteAllCart');
-    }
+    Swal.fire({
+        title: 'Xoá toàn bộ giỏ hàng?',
+        text: 'Thao tác này sẽ xoá tất cả sản phẩm khỏi giỏ hàng của bạn.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Xoá hết',
+        cancelButtonText: 'Huỷ'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            store.dispatch('cart/deleteAllCart');
+            Swal.fire({
+                icon: 'success',
+                title: 'Đã xoá toàn bộ!',
+                text: 'Giỏ hàng của bạn hiện đang trống.',
+                showConfirmButton: false,
+                timer: 1500
+            });
+        }
+    });
 };
 </script>
-
 
 <template>
     <div class="container my-5">
         <h2 class="fw-bold mb-4 text-center">🛒 Giỏ hàng</h2>
 
+        <!-- Giỏ hàng trống -->
         <div class="text-center text-muted py-5" v-if="!cart.length">
             <i class="fa fa-shopping-cart fa-3x mb-3"></i>
             <p>Giỏ hàng của bạn đang trống</p>
-            <RouterLink to="/" class="btn btn-dark">Continue Shopping</RouterLink>
+            <RouterLink to="/" class="btn btn-dark">Tiếp tục mua sắm</RouterLink>
         </div>
 
+        <!-- Giỏ hàng có sản phẩm -->
         <div class="row g-4" v-else>
+            <!-- Bảng sản phẩm -->
             <div class="col-lg-8">
                 <div class="card border-0 shadow-sm">
                     <div class="card-body p-0">
                         <table class="table align-middle mb-0">
                             <thead class="table-dark text-center">
                                 <tr>
-                                    <th>Product</th>
-                                    <th>Price</th>
-                                    <th>Quantity</th>
-                                    <th>Total</th>
+                                    <th>Sản phẩm</th>
+                                    <th>Giá</th>
+                                    <th>Số lượng</th>
+                                    <th>Tổng</th>
                                     <th></th>
                                 </tr>
                             </thead>
@@ -100,6 +141,7 @@ const deleteAllCart = () => {
                 </div>
             </div>
 
+            <!-- Tổng đơn hàng -->
             <div class="col-lg-4">
                 <div class="card border-0 shadow-sm">
                     <div class="card-body">
@@ -149,5 +191,11 @@ input[type="number"] {
 .card:hover {
     transform: translateY(-3px);
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+button.btn-outline-dark:hover,
+button.btn-outline-danger:hover {
+    transform: scale(1.05);
+    transition: all 0.2s ease;
 }
 </style>

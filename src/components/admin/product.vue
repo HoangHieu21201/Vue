@@ -3,58 +3,102 @@ import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 
-const selectedName = ref("")
-const selectedId = ref(null)
-const category = ref([])
-const products = ref([])
-const form = ref({ name: "", price: "", discount: "", quantity: "", status: "", description: "", categoryId: "", image: [] })
+const selectedName = ref("");
+const selectedId = ref(null);
+const category = ref([]);
+const products = ref([]);
+const form = ref({
+    name: "",
+    price: "",
+    discount: "",
+    quantity: "",
+    status: "",
+    description: "",
+    categoryId: "",
+    image: []
+});
 
+// ✅ Lấy danh mục
 const readCategory = async () => {
     try {
-        const res = await axios.get('http://localhost:3000/categories')
-        category.value = res.data
+        const res = await axios.get('http://localhost:3000/categories');
+        category.value = res.data;
     } catch (err) {
-        console.error('err: ', err)
-    }
-}
-
-const readproduct = async () => {
-    try {
-        const res = await axios.get('http://localhost:3000/products')
-        products.value = res.data
-    } catch (err) {
-        console.error('err: ', err)
-    }
-}
-
-const askDelete = (id, name) => {
-    selectedId.value = id
-    selectedName.value = name
-}
-
-const confirmDelete = async () => {
-    if (!selectedId.value) return
-    try {
-        await axios.delete(`http://localhost:3000/products/${selectedId.value}`)
-        products.value = products.value.filter(c => c.id !== selectedId.value)
-        selectedId.value = null
-        selectedName.value = ""
+        console.error('Lỗi lấy danh mục:', err);
         Swal.fire({
-            icon: 'success',
-            title: 'Xoá sản phẩm thành công',
-            text: `Bạn đã xoá sản phẩm thành công`,
-            showConfirmButton: true,
+            icon: 'error',
+            title: 'Lỗi tải danh mục!',
+            text: 'Không thể tải danh mục sản phẩm.',
             confirmButtonColor: '#000'
-        })
-    } catch (err) {
-        console.error("err: ", err)
+        });
     }
-}
+};
 
+// ✅ Lấy danh sách sản phẩm
+const readProduct = async () => {
+    try {
+        const res = await axios.get('http://localhost:3000/products');
+        products.value = res.data;
+    } catch (err) {
+        console.error('Lỗi lấy sản phẩm:', err);
+        Swal.fire({
+            icon: 'error',
+            title: 'Lỗi tải sản phẩm!',
+            text: 'Không thể tải danh sách sản phẩm.',
+            confirmButtonColor: '#000'
+        });
+    }
+};
+
+// ✅ Chọn sản phẩm để xoá
+const askDelete = (id, name) => {
+    selectedId.value = id;
+    selectedName.value = name;
+};
+
+// ✅ Xác nhận xoá
+const confirmDelete = async () => {
+    if (!selectedId.value) return;
+
+    const result = await Swal.fire({
+        title: `Bạn có chắc muốn xoá "${selectedName.value}" không?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#000',
+        cancelButtonColor: '#888',
+        confirmButtonText: 'Xoá',
+        cancelButtonText: 'Huỷ'
+    });
+
+    if (result.isConfirmed) {
+        try {
+            await axios.delete(`http://localhost:3000/products/${selectedId.value}`);
+            products.value = products.value.filter(p => p.id !== selectedId.value);
+            selectedId.value = null;
+            selectedName.value = "";
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Đã xoá sản phẩm!',
+                text: 'Sản phẩm đã được xoá thành công.',
+                confirmButtonColor: '#000'
+            });
+        } catch (err) {
+            console.error('Lỗi xoá:', err);
+            Swal.fire({
+                icon: 'error',
+                title: 'Xoá thất bại!',
+                text: 'Không thể xoá sản phẩm này.',
+                confirmButtonColor: '#000'
+            });
+        }
+    }
+};
+
+// ✅ Upload hình ảnh
 const handleImageUpload = (e) => {
     const files = e.target.files;
     if (!files.length) return;
-
     form.value.image = [];
 
     Array.from(files).forEach(file => {
@@ -66,106 +110,93 @@ const handleImageUpload = (e) => {
     });
 };
 
+// ✅ Thêm sản phẩm
 const addProduct = async () => {
-    if (
-        !form.value.name ||
-        !form.value.price ||
-        !form.value.quantity ||
-        !form.value.status ||
-        !form.value.discount ||
-        !form.value.description ||
-        !form.value.categoryId ||
-        form.value.image.length === 0
-    ) {
+    const f = form.value;
+    if (!f.name || !f.price || !f.quantity || !f.status || !f.discount || !f.description || !f.categoryId || f.image.length === 0) {
         Swal.fire({
             icon: 'warning',
-            title: 'Bạn nhập thiếu thông tin',
-            text: `Vui lòng bạn kiểm tra lại thông tin`,
-            showConfirmButton: false,
-            timer: 2000
-        })
-        return
+            title: 'Thiếu thông tin!',
+            text: 'Vui lòng nhập đầy đủ các trường bắt buộc.',
+            confirmButtonColor: '#000'
+        });
+        return;
     }
 
     try {
-        const res = await axios.post('http://localhost:3000/products', form.value)
-        products.value.push(res.data)
+        const res = await axios.post('http://localhost:3000/products', f);
+        products.value.push(res.data);
+
         Swal.fire({
             icon: 'success',
-            title: 'Thêm sản phẩm thành công',
-            text: `Bạn đã thêm sản phẩm thành công`,
-            showConfirmButton: true,
+            title: 'Thêm sản phẩm thành công!',
+            text: 'Sản phẩm đã được thêm vào danh sách.',
             confirmButtonColor: '#000'
-        })
-        resertForm()
+        });
+        resetForm();
     } catch (err) {
-        console.error("Err: ", err)
+        console.error('Lỗi thêm:', err);
+        Swal.fire({
+            icon: 'error',
+            title: 'Lỗi khi lưu!',
+            text: 'Không thể thêm sản phẩm.',
+            confirmButtonColor: '#000'
+        });
     }
-}
+};
 
+// ✅ Chọn sản phẩm để sửa
 const askEdit = (item) => {
-    selectedId.value = item.id
-    form.value = {
-        name: item.name,
-        price: item.price,
-        discount: item.discount,
-        quantity: item.quantity,
-        status: item.status,
-        description: item.description,
-        categoryId: item.categoryId,
-        image: item.image || []
-    }
-}
+    selectedId.value = item.id;
+    form.value = { ...item };
+};
 
+// ✅ Upload lại ảnh khi sửa
 const handleEditImage = (e) => {
-    const files = e.target.files
-    if (!files.length) return
+    const files = e.target.files;
+    if (!files.length) return;
 
-    form.value.image = []
-
+    form.value.image = [];
     Array.from(files).forEach(file => {
-        const reader = new FileReader()
+        const reader = new FileReader();
         reader.onload = (event) => {
-            form.value.image.push(event.target.result)
-        }
-        reader.readAsDataURL(file)
-    })
-}
+            form.value.image.push(event.target.result);
+        };
+        reader.readAsDataURL(file);
+    });
+};
 
+// ✅ Cập nhật sản phẩm
 const editProduct = async () => {
-    if (!selectedId.value) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Bạn nhập thiếu thông tin',
-            text: `Vui lòng bạn kiểm tra lại thông tin`,
-            showConfirmButton: false,
-            timer: 2000
-        })
-        return
-    }
-    try {
-        const res = await axios.put(`http://localhost:3000/products/${selectedId.value}`, form.value)
+    if (!selectedId.value) return;
 
-        const index = products.value.findIndex((p) => p.id === selectedId.value)
-        if (index !== -1) {
-            products.value[index] = res.data
-        }
+    try {
+        const res = await axios.put(`http://localhost:3000/products/${selectedId.value}`, form.value);
+        const index = products.value.findIndex(p => p.id === selectedId.value);
+        if (index !== -1) products.value[index] = res.data;
 
         Swal.fire({
             icon: 'success',
-            title: 'Cập nhật sản phẩm thành công',
-            text: `Bạn đã cập nhật sản phẩm thành công`,
-            showConfirmButton: true,
+            title: 'Cập nhật sản phẩm thành công!',
+            text: 'Thông tin sản phẩm đã được cập nhật.',
             confirmButtonColor: '#000'
-        })
-        selectedId.value = null
-        resertForm()
-    } catch (err) {
-        console.error("Edit product error:", err)
-    }
-}
+        });
 
-const resertForm = () => {
+        selectedId.value = null;
+        resetForm();
+    } catch (err) {
+        console.error('Lỗi cập nhật:', err);
+        Swal.fire({
+            icon: 'error',
+            title: 'Cập nhật thất bại!',
+            text: 'Không thể cập nhật sản phẩm.',
+            confirmButtonColor: '#000'
+        });
+    }
+};
+
+// ✅ Reset form
+const resetForm = () => {
     form.value = {
         name: "",
         price: "",
@@ -175,16 +206,15 @@ const resertForm = () => {
         description: "",
         categoryId: "",
         image: []
-    }
-    selectedId.value = null
-    selectedName.value = ""
-}
+    };
+    selectedId.value = null;
+    selectedName.value = "";
+};
 
 onMounted(() => {
-    readCategory()
-    readproduct()
-})
-
+    readCategory();
+    readProduct();
+});
 </script>
 
 <template>
@@ -271,17 +301,18 @@ onMounted(() => {
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Giá</label>
-                                    <input v-model="form.price" type="number" class="form-control"
+                                    <input v-model="form.price" type="number" min="20000" class="form-control"
                                         placeholder="Nhập giá" />
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Giá đã giảm</label>
-                                    <input v-model="form.discount" type="number" class="form-control"
+                                    <input v-model="form.discount" type="number" min="0" class="form-control"
                                         placeholder="Nhập giá" />
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Số lượng</label>
-                                    <input v-model="form.quantity" type="number" class="form-control"
+                                     
+                                    <input v-model="form.quantity" min="10" type="number" class="form-control"
                                         placeholder="Nhập số lượng" />
                                 </div>
                                 <div class="col-md-6">
@@ -322,7 +353,6 @@ onMounted(() => {
             </div>
         </div>
 
-        <!-- Modal sửa sản phẩm -->
         <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-lg modal-dialog-centered">
                 <div class="modal-content border-0 shadow-lg rounded-4">

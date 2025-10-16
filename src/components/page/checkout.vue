@@ -3,6 +3,7 @@ import { computed, ref, onMounted } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
+import Swal from 'sweetalert2'; // ✅ thêm thư viện thông báo đẹp
 
 const store = useStore();
 const router = useRouter();
@@ -31,7 +32,12 @@ const finalTotal = computed(() => {
 
 const applyCoupon = async () => {
     if (!couponCode.value) {
-        alert("Vui lòng nhập mã giảm giá.");
+        Swal.fire({
+            icon: 'warning',
+            title: 'Thiếu mã giảm giá',
+            text: 'Vui lòng nhập mã giảm giá trước khi áp dụng.',
+            confirmButtonColor: '#000'
+        });
         return;
     }
     try {
@@ -42,22 +48,42 @@ const applyCoupon = async () => {
             const now = new Date();
             const expiryDate = new Date(coupon.expiry_date);
             if (now > expiryDate) {
-                alert("Mã giảm giá đã hết hạn!");
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Mã giảm giá đã hết hạn!',
+                    text: 'Vui lòng chọn mã khác.',
+                    confirmButtonColor: '#000'
+                });
                 appliedCoupon.value = null;
                 discountAmount.value = 0;
             } else {
-                alert(`Áp dụng mã giảm giá ${coupon.discount}% thành công!`);
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Áp dụng thành công!',
+                    text: `Bạn được giảm ${coupon.discount}% trên tổng đơn hàng.`,
+                    confirmButtonColor: '#000'
+                });
                 appliedCoupon.value = coupon;
                 discountAmount.value = (subtotal.value * coupon.discount) / 100;
             }
         } else {
-            alert("Mã giảm giá không hợp lệ!");
+            Swal.fire({
+                icon: 'error',
+                title: 'Mã giảm giá không hợp lệ!',
+                text: 'Vui lòng kiểm tra lại mã.',
+                confirmButtonColor: '#000'
+            });
             appliedCoupon.value = null;
             discountAmount.value = 0;
         }
     } catch (error) {
         console.error("Lỗi khi áp dụng coupon:", error);
-        alert("Có lỗi xảy ra, vui lòng thử lại.");
+        Swal.fire({
+            icon: 'error',
+            title: 'Có lỗi xảy ra!',
+            text: 'Không thể áp dụng mã giảm giá. Vui lòng thử lại sau.',
+            confirmButtonColor: '#000'
+        });
     }
 };
 
@@ -74,14 +100,26 @@ onMounted(() => {
 
 const placeOrder = async () => {
     if (!customerName.value || !customerAddress.value || !customerPhone.value) {
-        alert('Vui lòng điền đầy đủ thông tin giao hàng.');
+        Swal.fire({
+            icon: 'warning',
+            title: 'Thiếu thông tin!',
+            text: 'Vui lòng điền đầy đủ thông tin giao hàng.',
+            confirmButtonColor: '#000'
+        });
         return;
     }
 
     const loggedUser = JSON.parse(localStorage.getItem("loggedInUser"));
     if (!loggedUser) {
-        alert('Bạn cần đăng nhập để đặt hàng.');
-        router.push('/login');
+        Swal.fire({
+            icon: 'info',
+            title: 'Chưa đăng nhập!',
+            text: 'Bạn cần đăng nhập để đặt hàng.',
+            confirmButtonText: 'Đăng nhập ngay',
+            confirmButtonColor: '#000'
+        }).then(() => {
+            router.push('/login');
+        });
         return;
     }
 
@@ -114,25 +152,45 @@ const placeOrder = async () => {
             newOrder = response.data;
         } catch (error) {
             console.error("Lỗi khi đặt hàng:", error);
-            router.push({ name: 'OrderStatus', query: { status: 'failed' } });
+            Swal.fire({
+                icon: 'error',
+                title: 'Đặt hàng thất bại!',
+                text: 'Vui lòng thử lại sau.',
+                confirmButtonColor: '#000'
+            }).then(() => {
+                router.push({ name: 'OrderStatus', query: { status: 'failed' } });
+            });
             return; 
         }
         
-        alert('Đặt hàng thành công!');
-
-        await store.dispatch('cart/deleteAllCart');
-
-        router.push({
-            name: 'OrderStatus',
-            query: { status: 'success', orderId: newOrder.id }
+        Swal.fire({
+            icon: 'success',
+            title: 'Đặt hàng thành công!',
+            text: 'Cảm ơn bạn đã mua sắm. Đơn hàng của bạn đang chờ xác nhận.',
+            confirmButtonColor: '#000',
+            confirmButtonText: 'Xem trạng thái đơn hàng'
+        }).then(() => {
+            store.dispatch('cart/deleteAllCart');
+            router.push({
+                name: 'OrderStatus',
+                query: { status: 'success', orderId: newOrder.id }
+            });
         });
 
     } else if (paymentMethod.value === 'vnpay') {
         const pendingOrderId = sessionStorage.getItem('pendingOrderId');
         if (pendingOrderId) {
-            if (confirm('Bạn có một giao dịch đang chờ xử lý. Bạn có muốn đến Lịch sử đơn hàng để thanh toán lại không?')) {
-                router.push('/order-history');
-            }
+            Swal.fire({
+                icon: 'info',
+                title: 'Đã có giao dịch đang xử lý!',
+                text: 'Bạn có muốn đến Lịch sử đơn hàng để thanh toán lại không?',
+                showCancelButton: true,
+                confirmButtonText: 'Đến Lịch sử',
+                cancelButtonText: 'Ở lại',
+                confirmButtonColor: '#000'
+            }).then((result) => {
+                if (result.isConfirmed) router.push('/order-history');
+            });
             return;
         }
 
@@ -148,20 +206,37 @@ const placeOrder = async () => {
             };
             const { data } = await axios.post('http://localhost:3001/create_payment_url', paymentPayload);
             if (data.url) {
-                window.location.href = data.url;
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Đang chuyển hướng...',
+                    text: 'Vui lòng đợi trong giây lát để đến trang thanh toán VNPay.',
+                    showConfirmButton: false,
+                    timer: 2000
+                }).then(() => {
+                    window.location.href = data.url;
+                });
             } else {
                 sessionStorage.removeItem('pendingOrderId');
-                alert('Có lỗi xảy ra, không thể tạo được URL thanh toán.');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Không thể tạo URL thanh toán!',
+                    text: 'Vui lòng thử lại sau.',
+                    confirmButtonColor: '#000'
+                });
             }
         } catch (error) {
             sessionStorage.removeItem('pendingOrderId');
             console.error("Lỗi khi tạo thanh toán VNPay:", error);
-            alert("Đã xảy ra lỗi khi tạo yêu cầu thanh toán. Vui lòng thử lại.");
+            Swal.fire({
+                icon: 'error',
+                title: 'Thanh toán thất bại!',
+                text: 'Đã xảy ra lỗi khi tạo yêu cầu thanh toán. Vui lòng thử lại.',
+                confirmButtonColor: '#000'
+            });
         }
     }
 };
 </script>
-
 
 <template>
     <div class="container my-5">
@@ -173,37 +248,31 @@ const placeOrder = async () => {
                         <form @submit.prevent="placeOrder">
                             <div class="mb-3">
                                 <label for="customerName" class="form-label">Họ và tên</label>
-                                <input type="text" v-model="customerName" id="customerName" class="form-control"
-                                    required>
+                                <input type="text" v-model="customerName" id="customerName" class="form-control" required>
                             </div>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label for="customerPhone" class="form-label">Số điện thoại</label>
-                                    <input type="tel" v-model="customerPhone" id="customerPhone" class="form-control"
-                                        required>
+                                    <input type="tel" v-model="customerPhone" id="customerPhone" class="form-control" required>
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label for="customerAddress" class="form-label">Địa chỉ</label>
-                                    <input type="text" v-model="customerAddress" id="customerAddress"
-                                        class="form-control" required>
+                                    <input type="text" v-model="customerAddress" id="customerAddress" class="form-control" required>
                                 </div>
                             </div>
                             <div class="mb-3">
                                 <label for="customerNote" class="form-label">Ghi chú (tùy chọn)</label>
-                                <textarea v-model="customerNote" id="customerNote" class="form-control"
-                                    rows="3"></textarea>
+                                <textarea v-model="customerNote" id="customerNote" class="form-control" rows="3"></textarea>
                             </div>
 
                             <h5 class="fw-bold my-4">Phương thức thanh toán</h5>
                             <div class="list-group">
                                 <label class="list-group-item list-group-item-action d-flex align-items-center">
-                                    <input type="radio" v-model="paymentMethod" value="cod" name="paymentMethod"
-                                        class="form-check-input me-3">
+                                    <input type="radio" v-model="paymentMethod" value="cod" name="paymentMethod" class="form-check-input me-3">
                                     Thanh toán khi nhận hàng (COD)
                                 </label>
                                 <label class="list-group-item list-group-item-action d-flex align-items-center">
-                                    <input type="radio" v-model="paymentMethod" value="vnpay" name="paymentMethod"
-                                        class="form-check-input me-3">
+                                    <input type="radio" v-model="paymentMethod" value="vnpay" name="paymentMethod" class="form-check-input me-3">
                                     Thanh toán qua VNPay
                                 </label>
                             </div>
@@ -221,20 +290,17 @@ const placeOrder = async () => {
                     <div class="card-body p-4">
                         <h4 class="fw-bold mb-3">Tóm tắt đơn hàng</h4>
                         <div v-for="item in cart" :key="item.id" class="d-flex align-items-center mb-3">
-                            <img :src="item.image[0]" class="rounded"
-                                style="width: 60px; height: 60px; object-fit: cover;">
+                            <img :src="item.image[0]" class="rounded" style="width: 60px; height: 60px; object-fit: cover;">
                             <div class="ms-3 flex-grow-1">
                                 <h6 class="mb-0 small">{{ item.name }}</h6>
                                 <small class="text-muted">SL: {{ item.quantity }}</small>
                             </div>
-                            <span class="fw-semibold small">{{ (item.discount * item.quantity).toLocaleString('vi-VN')
-                                }} ₫</span>
+                            <span class="fw-semibold small">{{ (item.discount * item.quantity).toLocaleString('vi-VN') }} ₫</span>
                         </div>
                         <hr>
                         <div class="input-group mb-3">
                             <input type="text" v-model="couponCode" class="form-control" placeholder="Nhập mã giảm giá">
-                            <button class="btn btn-outline-secondary" type="button" @click="applyCoupon">Áp
-                                dụng</button>
+                            <button class="btn btn-outline-secondary" type="button" @click="applyCoupon">Áp dụng</button>
                         </div>
                         <hr>
                         <div class="d-flex justify-content-between mb-2">

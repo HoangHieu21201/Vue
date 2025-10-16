@@ -36,12 +36,12 @@ onMounted(() => {
     if (query.vnp_ResponseCode === '00') {
         status.value = 'success';
         message.value = `Giao dịch thành công! Cảm ơn bạn đã mua hàng.`;
-        updateOrderStatus(orderId.value, 'Đã thanh toán', 'Thanh toán thành công qua VNPay.');
+        updateOrderStatus(orderId.value, 'Đã thanh toán', 'Thanh toán thành công qua thẻ tín dụng.');
         store.dispatch('cart/deleteAllCart'); 
     }
     else {
         status.value = 'failed';
-        message.value = `Giao dịch đã bị hủy. Sản phẩm của bạn vẫn còn trong giỏ hàng.`;
+        message.value = `Giao dịch đã bị hủy.`;
         deleteOrder(orderId.value);
     }
 });

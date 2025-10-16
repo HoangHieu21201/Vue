@@ -3,14 +3,8 @@ import { onMounted } from 'vue';
 import { useStore } from 'vuex';
 import userLayout from './layout/userLayout.vue';
 import { toast } from "vue3-toastify";
-// import "vue3-toastify/dist/index.css";
-toast.success("Thành công", { theme: "colored" });
-
-
-
 const store = useStore();
 
-// Khi component được tạo, gọi action để tải giỏ hàng
 onMounted(() => {
   store.dispatch('cart/fetchCart');
 });
