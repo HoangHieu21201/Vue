@@ -158,3 +158,6 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 >>>>>>> c175e6d79e1fff3154d02e91acdab2c0dd79452d
+
+# Ignore database file (git add -f db.json)
+db.json
